@@ -101,7 +101,7 @@ class Zonaleros : ConfigurableAnimeSource, AnimeHttpSource() {
                 element.attr("href").contains("peliculas", ignoreCase = true)
         }.map { element ->
             SAnime.create().apply {
-                title = element.selectFirst(".Title")!!.text()
+                title = element.selectFirst(".Title")?.text() ?: "Anime"
                 thumbnail_url = element.selectFirst("img")?.getImageUrl()
                 setUrlWithoutDomain(element.attr("abs:href"))
             }
@@ -233,8 +233,8 @@ class Zonaleros : ConfigurableAnimeSource, AnimeHttpSource() {
     }
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT)!!
-        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT)!!
+        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT) ?: PREF_QUALITY_DEFAULT
+        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT) ?: PREF_SERVER_DEFAULT
         return this.sortedWith(
             compareBy(
                 { it.quality.contains(server, true) },

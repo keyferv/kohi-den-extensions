@@ -56,14 +56,12 @@ class SoloLatino : DooPlay(
 
     override fun latestUpdatesSelector() = popularAnimeSelector()
 
-    override fun popularAnimeFromElement(element: Element): SAnime {
-        return SAnime.create().apply {
-            val img = element.selectFirst("img")!!
-            val url = element.selectFirst("a")?.attr("href") ?: element.attr("href")
-            setUrlWithoutDomain(url)
-            title = img.attr("alt")
-            thumbnail_url = img.attr("data-srcset")
-        }
+    override fun popularAnimeFromElement(element: Element): SAnime = SAnime.create().apply {
+        val img = element.selectFirst("img")
+        val url = element.selectFirst("a")?.attr("href") ?: element.attr("href")
+        setUrlWithoutDomain(url)
+        title = img?.attr("alt") ?: "Serie/Película"
+        thumbnail_url = img?.attr("data-srcset")
     }
 
     override fun popularAnimeNextPageSelector(): String = "div.pagMovidy a"
@@ -88,7 +86,7 @@ class SoloLatino : DooPlay(
         return season.select("ul.episodios li").mapNotNull { element ->
             runCatching {
                 episodeFromElement(element, seasonName)
-            }.onFailure { it.printStackTrace() }.getOrNull()
+            }.getOrNull()
         }
     }
 
@@ -100,7 +98,7 @@ class SoloLatino : DooPlay(
                 ?.trim()
                 ?.let { episodeNumberRegex.find(it)?.groupValues?.last() } ?: "0"
 
-            val href = element.selectFirst("a[href]")!!.attr("href")
+            val href = element.selectFirst("a[href]")?.attr("href") ?: ""
             val episodeName = element.selectFirst("div.epst")?.text() ?: "Sin título"
 
             episode_number = epNum.toFloatOrNull() ?: 0F
@@ -141,7 +139,7 @@ class SoloLatino : DooPlay(
     private fun extractVideosSafely(link: String, languageCode: String): List<Video> {
         return runCatching {
             extractVideos(link, languageCode).sort()
-        }.onFailure { it.printStackTrace() }.getOrDefault(emptyList())
+        }.getOrDefault(emptyList())
     }
 
     private suspend fun getLinks(after: (List<Pair<String, String>>) -> Unit, onError: (Throwable) -> Unit, path: String) {
@@ -247,9 +245,9 @@ class SoloLatino : DooPlay(
 
     private fun extractVideos(url: String, lang: String): List<Video> {
         val prefix = if (lang == "unknown") "[UNK]" else lang
-        try {
+        return try {
             val matched = conventions.firstOrNull { (_, names) -> names.any { it.lowercase() in url.lowercase() } }?.first
-            return when (matched) {
+            when (matched) {
                 "streamwish" -> streamWishExtractor.videosFromUrl(url, videoNameGen = { "$prefix StreamWish:$it" })
                 "uqload" -> uqloadExtractor.videosFromUrl(url, prefix)
                 "vidguard" -> vidGuardExtractor.videosFromUrl(url, "$prefix ")
@@ -260,8 +258,7 @@ class SoloLatino : DooPlay(
                 else -> emptyList()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            return emptyList()
+            emptyList()
         }
     }
 
@@ -509,19 +506,20 @@ class SoloLatino : DooPlay(
 
     override fun animeDetailsParse(document: Document): SAnime {
         val doc = getRealAnimeDoc(document)
-        val sheader = doc.selectFirst("div.sheader")!!
+        val sheader = doc.selectFirst("div.sheader")
         return SAnime.create().apply {
             setUrlWithoutDomain(doc.location())
-            sheader.selectFirst("div.poster > img")!!.let {
+            sheader?.selectFirst("div.poster > img")?.let {
                 thumbnail_url = it.getImageUrl()
                 title = it.attr("alt").ifEmpty {
-                    sheader.selectFirst("div.data > h1")!!.text()
+                    sheader.selectFirst("div.data > h1")?.text() ?: "Película/Serie"
                 }
             }
 
-            genre = sheader.select("div.data > div.sgeneros > a")
-                .eachText()
-                .joinToString()
+            genre = sheader?.select("div.data > div.sgeneros > a")
+                ?.eachText()
+                ?.joinToString()
+                ?: ""
 
             doc.selectFirst(additionalInfoSelector)?.let { info ->
                 description = buildString {
@@ -601,9 +599,9 @@ class SoloLatino : DooPlay(
     }
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString(prefQualityKey, prefQualityDefault)!!
-        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT)!!
-        val lang = preferences.getString(PREF_LANG_TITLE, PREF_LANG_DEFAULT)!!
+        val quality = preferences.getString(prefQualityKey, prefQualityDefault) ?: prefQualityDefault
+        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT) ?: PREF_SERVER_DEFAULT
+        val lang = preferences.getString(PREF_LANG_TITLE, PREF_LANG_DEFAULT) ?: PREF_LANG_DEFAULT
         return sortedWith(
             compareBy(
                 { it.quality.contains(lang) },

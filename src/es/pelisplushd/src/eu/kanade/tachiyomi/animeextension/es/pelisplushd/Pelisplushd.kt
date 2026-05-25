@@ -204,8 +204,9 @@ open class Pelisplushd(override val name: String, override val baseUrl: String) 
                 "filemoon" -> filemoonExtractor.videosFromUrl(url, prefix = "$prefix Filemoon:")
                 "amazon" -> {
                     val body = client.newCall(GET(url)).execute().asJsoup()
-                    return if (body.select("script:containsData(var shareId)").toString().isNotBlank()) {
-                        val shareId = body.selectFirst("script:containsData(var shareId)")!!.data()
+                    val script = body.selectFirst("script:containsData(var shareId)")
+                    return if (script != null && script.data().isNotBlank()) {
+                        val shareId = script.data()
                             .substringAfter("shareId = \"").substringBefore("\"")
                         val amazonApiJson = client.newCall(GET("https://www.amazon.com/drive/v1/shares/$shareId?resourceVersion=V2&ContentType=JSON&asset=ALL"))
                             .execute().asJsoup()
@@ -264,8 +265,8 @@ open class Pelisplushd(override val name: String, override val baseUrl: String) 
     override fun videoFromElement(element: Element) = throw UnsupportedOperationException()
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT)!!
-        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT)!!
+        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT) ?: PREF_QUALITY_DEFAULT
+        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT) ?: PREF_SERVER_DEFAULT
         return this.sortedWith(
             compareBy(
                 { it.quality.contains(server, true) },
@@ -295,15 +296,13 @@ open class Pelisplushd(override val name: String, override val baseUrl: String) 
 
     override fun searchAnimeSelector(): String = popularAnimeSelector()
 
-    override fun animeDetailsParse(document: Document): SAnime {
-        return SAnime.create().apply {
-            title = document.selectFirst("h1.m-b-5")!!.text()
-            thumbnail_url = document.selectFirst("div.card-body div.row div.col-sm-3 img.img-fluid")!!
-                .attr("src").replace("/w154/", "/w500/")
-            description = document.selectFirst("div.col-sm-4 div.text-large")!!.ownText()
-            genre = document.select("div.p-v-20.p-h-15.text-center a span").joinToString { it.text() }
-            status = SAnime.COMPLETED
-        }
+    override fun animeDetailsParse(document: Document): SAnime = SAnime.create().apply {
+        title = document.selectFirst("h1.m-b-5")?.text() ?: "Película/Serie"
+        thumbnail_url = document.selectFirst("div.card-body div.row div.col-sm-3 img.img-fluid")
+            ?.attr("abs:src")?.replace("/w154/", "/w500/")
+        description = document.selectFirst("div.col-sm-4 div.text-large")?.ownText() ?: ""
+        genre = document.select("div.p-v-20.p-h-15.text-center a span").joinToString { it.text() }
+        status = SAnime.COMPLETED
     }
 
     override fun latestUpdatesNextPageSelector() = throw UnsupportedOperationException()

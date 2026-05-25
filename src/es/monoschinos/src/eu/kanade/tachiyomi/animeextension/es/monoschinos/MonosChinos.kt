@@ -96,7 +96,7 @@ class MonosChinos : ConfigurableAnimeSource, AnimeHttpSource() {
         val nextPage = document.select(".pagination [title=\"Siguiente página\"]").any()
         val animeList = elements.map { element ->
             SAnime.create().apply {
-                title = element.selectFirst(".title_cap")!!.text()
+                title = element.selectFirst(".title_cap")?.text() ?: "Anime"
                 thumbnail_url = element.selectFirst("img")?.getImageUrl()
                 setUrlWithoutDomain(element.attr("abs:href"))
             }
@@ -212,8 +212,8 @@ class MonosChinos : ConfigurableAnimeSource, AnimeHttpSource() {
     }
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT)!!
-        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT)!!
+        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT) ?: PREF_QUALITY_DEFAULT
+        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT) ?: PREF_SERVER_DEFAULT
         return this.sortedWith(
             compareBy(
                 { it.quality.contains(server, true) },

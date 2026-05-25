@@ -219,7 +219,7 @@ class Hackstore : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
             when {
                 server.contains("streamtape") || server.contains("stp") || server.contains("stape") -> {
-                    listOf(streamTapeExtractor.videoFromUrl(url, quality = "$prefix StreamTape")!!)
+                    streamTapeExtractor.videoFromUrl(url, quality = "$prefix StreamTape")?.let { listOf(it) } ?: emptyList()
                 }
                 server.contains("voe") -> voeExtractor.videosFromUrl(url, "$prefix ")
                 server.contains("filemoon") -> filemoonExtractor.videosFromUrl(url, prefix = "$prefix Filemoon:")
@@ -247,9 +247,9 @@ class Hackstore : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun videoUrlParse(document: Document): String { throw UnsupportedOperationException() }
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT)!!
-        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT)!!
-        val lang = preferences.getString(PREF_LANGUAGE_KEY, PREF_LANGUAGE_DEFAULT)!!
+        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT) ?: PREF_QUALITY_DEFAULT
+        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT) ?: PREF_SERVER_DEFAULT
+        val lang = preferences.getString(PREF_LANGUAGE_KEY, PREF_LANGUAGE_DEFAULT) ?: PREF_LANGUAGE_DEFAULT
         return this.sortedWith(
             compareBy(
                 { it.quality.contains(lang) },

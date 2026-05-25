@@ -60,12 +60,10 @@ class Zeroanime : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
     override fun popularAnimeRequest(page: Int): Request = GET("$baseUrl/search?q=&letra=&genero=ALL&years=ALL&estado=2&orden=desc&p=$page")
 
-    override fun popularAnimeFromElement(element: Element): SAnime {
-        return SAnime.create().apply {
-            url = element.select("a").attr("href")
-            title = element.select("div.title").text()
-            thumbnail_url = element.select("div.thumb img").attr("src")
-        }
+    override fun popularAnimeFromElement(element: Element): SAnime = SAnime.create().apply {
+        url = element.select("a").attr("href")
+        title = element.select("div.title").text()
+        thumbnail_url = element.select("div.thumb img").attr("src")
     }
 
     override fun popularAnimeNextPageSelector(): String {
@@ -184,8 +182,8 @@ class Zeroanime : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun videoFromElement(element: Element) = throw UnsupportedOperationException()
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT)!!
-        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT)!!
+        val quality = preferences.getString(PREF_QUALITY_KEY, PREF_QUALITY_DEFAULT) ?: PREF_QUALITY_DEFAULT
+        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT) ?: PREF_SERVER_DEFAULT
         return this.sortedWith(
             compareBy(
                 { it.quality.contains(server, true) },
@@ -211,14 +209,12 @@ class Zeroanime : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
     override fun searchAnimeSelector(): String = popularAnimeSelector()
 
-    override fun animeDetailsParse(document: Document): SAnime {
-        return SAnime.create().apply {
-            title = document.select("h1.htitle").text()
-            description = document.select("div.vraven_text.single").text()
-            genre = document.select("div.single_data div.list a").joinToString { it.text() }
-            thumbnail_url = document.select("div.hentai_cover img").attr("abs:src")
-            status = parseStatus(document.select("div.data").text())
-        }
+    override fun animeDetailsParse(document: Document): SAnime = SAnime.create().apply {
+        title = document.select("h1.htitle").text()
+        description = document.select("div.vraven_text.single").text()
+        genre = document.select("div.single_data div.list a").joinToString { it.text() }
+        thumbnail_url = document.select("div.hentai_cover img").attr("abs:src")
+        status = parseStatus(document.select("div.data").text())
     }
 
     private fun parseStatus(statusString: String): Int {

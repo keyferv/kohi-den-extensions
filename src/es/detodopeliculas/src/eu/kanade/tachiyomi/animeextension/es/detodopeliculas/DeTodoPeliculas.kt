@@ -136,7 +136,6 @@ class DeTodoPeliculas : DooPlay(
                     else -> emptyList()
                 }
         }.getOrElse {
-            it.printStackTrace()
             emptyList()
         }
     }
@@ -300,9 +299,9 @@ class DeTodoPeliculas : DooPlay(
     override fun String.toDate() = 0L
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString(prefQualityKey, prefQualityDefault)!!
-        val lang = preferences.getString(PREF_LANG_KEY, PREF_LANG_DEFAULT)!!
-        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT)!!
+        val quality = preferences.getString(prefQualityKey, prefQualityDefault) ?: prefQualityDefault
+        val lang = preferences.getString(PREF_LANG_KEY, PREF_LANG_DEFAULT) ?: PREF_LANG_DEFAULT
+        val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT) ?: PREF_SERVER_DEFAULT
         return sortedWith(
             compareBy(
                 { it.quality.contains(lang) },

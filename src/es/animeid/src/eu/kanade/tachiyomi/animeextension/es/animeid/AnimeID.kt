@@ -82,37 +82,49 @@ class AnimeID : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
                 .set("Accept-Language", "es-MX,es-419;q=0.9,es;q=0.8,en;q=0.7")
                 .build()
 
-            val responseString = client.newCall(GET("https://www.animeid.tv/ajax/caps?id=$animeId&ord=DESC&pag=$nextPage", headers))
-                .execute().asJsoup().body()!!.toString().substringAfter("<body>").substringBefore("</body>")
-            val jObject = json.decodeFromString<JsonObject>(responseString)
-            val listCaps = jObject["list"]!!.jsonArray
-            listCaps!!.forEach { cap ->
+            val responseBody = client.newCall(GET("https://www.animeid.tv/ajax/caps?id=$animeId&ord=DESC&pag=$nextPage", headers))
+                .execute().asJsoup().body()?.toString()?.substringAfter("<body>")?.substringBefore("</body>") ?: ""
+            
+            if (responseBody.isEmpty()) break
+
+            val jObject = try { json.decodeFromString<JsonObject>(responseBody) } catch (_: Exception) { null }
+            val listCaps = jObject?.get("list")?.jsonArray ?: break
+
+            listCaps.forEach { cap ->
                 val capParsed = cap.jsonObject
-                val epNum = capParsed["numero"]!!.jsonPrimitive.content
+                val epNum = capParsed["numero"]?.jsonPrimitive?.content ?: return@forEach
                 val episode = SEpisode.create()
-                val dateUpload = manualDateParse(capParsed["date"]!!.jsonPrimitive.content!!.toString())
-                episode.episode_number = epNum.toFloat()
+                val dateStr = capParsed["date"]?.jsonPrimitive?.content ?: ""
+                val dateUpload = manualDateParse(dateStr)
+                episode.episode_number = epNum.toFloatOrNull() ?: 0f
                 episode.name = "Episodio $epNum"
-                dateUpload!!.also { episode.date_upload = it }
-                episode.setUrlWithoutDomain(baseUrl + capParsed["href"]!!.jsonPrimitive.content!!.toString())
+                dateUpload?.let { episode.date_upload = it }
+                episode.setUrlWithoutDomain(baseUrl + (capParsed["href"]?.jsonPrimitive?.content ?: ""))
                 capList.add(episode)
             }
-            if (listCaps!!.any()) nextPage += 1 else nextPage = -1
+            if (listCaps.isNotEmpty()) nextPage += 1 else nextPage = -1
         } while (nextPage != -1)
         return capList
     }
 
     private fun manualDateParse(stringDate: String): Long? {
+        if (stringDate.isEmpty()) return null
         return try {
             val format = SimpleDateFormat("dd MMM yyyy")
-            format.parse(stringDate!!.toString()).time
+            format.parse(stringDate).time
         } catch (e: Exception) {
-            var dateParsed = stringDate.split(" ")
-            val arrMonths = arrayOf("Jun", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-            val day = dateParsed[0]!!.trim().toInt()
+            val dateParsed = stringDate.split(" ")
+            if (dateParsed.size < 3) return null
+            val arrMonths = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+            val day = dateParsed[0].trim().toIntOrNull() ?: return null
             val month = arrMonths.indexOf(dateParsed[1].trim()) + 1
-            val year = dateParsed[2]!!.trim().toInt()
-            Date(year, month, day).time
+            if (month == 0) return null
+            val year = dateParsed[2].trim().toIntOrNull() ?: return null
+            try {
+                Date(year - 1900, month - 1, day).time
+            } catch (_: Exception) {
+                null
+            }
         }
     }
 
@@ -170,14 +182,12 @@ class AnimeID : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         return linkRegex.findAll(text).map { it.value.trim().removeSurrounding("\"") }.toList()
     }
 
-    override fun animeDetailsParse(document: Document): SAnime {
-        val anime = SAnime.create()
-        anime.thumbnail_url = document.selectFirst("#anime figure img.cover")!!.attr("abs:src")
-        anime.title = document.selectFirst("#anime section hgroup h1")!!.text()
-        anime.description = document.selectFirst("#anime section p.sinopsis")!!.text().removeSurrounding("\"")
-        anime.genre = document.select("#anime section ul.tags li a").joinToString { it.text() }
-        anime.status = parseStatus(document.select("div.main div section div.status-left div.cuerpo div:nth-child(2) span").text().trim())
-        return anime
+    override fun animeDetailsParse(document: Document): SAnime = SAnime.create().apply {
+        thumbnail_url = document.selectFirst("#anime figure img.cover")?.attr("abs:src")
+        title = document.selectFirst("#anime section hgroup h1")?.text() ?: "Anime"
+        description = document.selectFirst("#anime section p.sinopsis")?.text()?.removeSurrounding("\"")
+        genre = document.select("#anime section ul.tags li a").joinToString { it.text() }
+        status = parseStatus(document.select("div.main div section div.status-left div.cuerpo div:nth-child(2) span").text().trim())
     }
 
     override fun videoListSelector() = throw UnsupportedOperationException()
