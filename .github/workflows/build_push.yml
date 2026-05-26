@@ -167,7 +167,8 @@ jobs:
         run: |
           cd source
           mkdir -p repo/apk
-          cp ~/apk-artifacts/*.apk repo/apk/
+          find ~/apk-artifacts -name "*.apk" -type f -exec cp {} repo/apk/ \;
+          ls -la repo/apk/
           INSPECTOR_LINK="$(curl -s "https://api.github.com/repos/aniyomiorg/aniyomi-extensions-inspector/releases/latest" | jq -r '.assets[0].browser_download_url')"
           curl -L "$INSPECTOR_LINK" -o ./Inspector.jar
           java -jar ./Inspector.jar "repo/apk" "output.json" "tmp"
