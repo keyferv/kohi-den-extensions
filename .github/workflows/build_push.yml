@@ -118,11 +118,16 @@ jobs:
           key: build-cache-${{ github.sha }}-${{ matrix.chunk }}
 
       - name: Upload APKs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: "apks-${{ matrix.chunk }}"
           path: "**/*.apk"
           retention-days: 1
+
+      - name: Debug APK location
+        run: |
+          echo "=== Finding APK files ===" && find . -name "*.apk" -type f 2>/dev/null | head -20 || echo "No APKs found"
 
       - name: Clean up CI files
         run: rm signingkey.jks
@@ -147,6 +152,10 @@ jobs:
         with:
           path: ~/apk-artifacts
           merge-multiple: true
+
+      - name: Debug APK download
+        run: |
+          echo "=== APK artifacts ===" && ls -la ~/apk-artifacts/ 2>/dev/null || echo "No APK artifacts downloaded"
 
       - name: Set up JDK
         uses: actions/setup-java@v4
