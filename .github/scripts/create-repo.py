@@ -22,6 +22,23 @@ REPO_ICON_DIR = REPO_DIR / "icon"
 
 REPO_ICON_DIR.mkdir(parents=True, exist_ok=True)
 
+# Extensions whose sites are dead/parked. Source is kept in the repo, but they
+# are excluded from the published index so users don't see broken sources.
+EXCLUDED_PKGS = {
+    "eu.kanade.tachiyomi.animeextension.es.animebum",
+    "eu.kanade.tachiyomi.animeextension.es.animeyt",
+    "eu.kanade.tachiyomi.animeextension.es.ennovelas",
+    "eu.kanade.tachiyomi.animeextension.es.estrenosdoramas",
+    "eu.kanade.tachiyomi.animeextension.es.fanpelis",
+    "eu.kanade.tachiyomi.animeextension.es.hentaitk",
+    "eu.kanade.tachiyomi.animeextension.es.jkhentai",
+    "eu.kanade.tachiyomi.animeextension.es.locopelis",
+    "eu.kanade.tachiyomi.animeextension.es.samatodenvideos",
+    "eu.kanade.tachiyomi.animeextension.es.verseriesonline",
+    "eu.kanade.tachiyomi.animeextension.es.zeroanime",
+    "eu.kanade.tachiyomi.animeextension.es.zonaleros",
+}
+
 with open("output.json", encoding="utf-8") as f:
     inspector_data = json.load(f)
 
@@ -40,7 +57,11 @@ for apk in REPO_APK_DIR.iterdir():
     ).decode()
 
     package_info = next(x for x in badging.splitlines() if x.startswith("package: "))
-    package_name = PACKAGE_NAME_REGEX.search(package_info).group(1)    
+    package_name = PACKAGE_NAME_REGEX.search(package_info).group(1)
+
+    if package_name in EXCLUDED_PKGS:
+        continue
+
     application_icon = APPLICATION_ICON_320_REGEX.search(badging).group(1)
 
     with ZipFile(apk) as z, z.open(application_icon) as i, (

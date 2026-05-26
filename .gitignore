@@ -10,3 +10,10 @@ repo/
 apk/
 gen
 generated-src/
+
+# Local tooling / scratch
+.mavis/
+.opencode/
+.claude/
+__pycache__/
+*.pyc
