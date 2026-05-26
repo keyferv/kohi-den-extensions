@@ -1864,26 +1864,6 @@
     ]
   },
   {
-    "name": "Aniyomi: AnimeBum",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.animebum",
-    "apk": "aniyomi-es.animebum-v14.12.apk",
-    "lang": "es",
-    "code": 12,
-    "version": "14.12",
-    "nsfw": 0,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "AnimeBum",
-        "lang": "es",
-        "id": "8233706727551070437",
-        "baseUrl": "https://www.animebum.net",
-        "versionId": 1
-      }
-    ]
-  },
-  {
     "name": "Aniyomi: Animefenix",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.animefenix",
     "apk": "aniyomi-es.animefenix-v14.68.apk",
@@ -2044,32 +2024,12 @@
     ]
   },
   {
-    "name": "Aniyomi: Animeyt",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.animeyt",
-    "apk": "aniyomi-es.animeyt-v14.12.apk",
-    "lang": "es",
-    "code": 12,
-    "version": "14.12",
-    "nsfw": 0,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "AnimeYT",
-        "lang": "es",
-        "id": "3945696494710013768",
-        "baseUrl": "https://ytanime.tv",
-        "versionId": 1
-      }
-    ]
-  },
-  {
     "name": "Aniyomi: AnimeYT.es",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.animeytes",
-    "apk": "aniyomi-es.animeytes-v14.17.apk",
+    "apk": "aniyomi-es.animeytes-v14.18.apk",
     "lang": "es",
-    "code": 17,
-    "version": "14.17",
+    "code": 18,
+    "version": "14.18",
     "nsfw": 0,
     "hasReadme": 0,
     "hasChangelog": 0,
@@ -2078,7 +2038,7 @@
         "name": "AnimeYT.es",
         "lang": "es",
         "id": "4742118265598399159",
-        "baseUrl": "https://animeyt.es",
+        "baseUrl": "https://animeytx.net",
         "versionId": 1
       }
     ]
@@ -2146,10 +2106,10 @@
   {
     "name": "Aniyomi: Cine24h",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.cine24h",
-    "apk": "aniyomi-es.cine24h-v14.19.apk",
+    "apk": "aniyomi-es.cine24h-v14.20.apk",
     "lang": "es",
-    "code": 19,
-    "version": "14.19",
+    "code": 20,
+    "version": "14.20",
     "nsfw": 0,
     "hasReadme": 0,
     "hasChangelog": 0,
@@ -2291,66 +2251,6 @@
     ]
   },
   {
-    "name": "Aniyomi: EnNovelas",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.ennovelas",
-    "apk": "aniyomi-es.ennovelas-v14.26.apk",
-    "lang": "es",
-    "code": 26,
-    "version": "14.26",
-    "nsfw": 0,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "EnNovelas",
-        "lang": "es",
-        "id": "6683521813386506618",
-        "baseUrl": "https://tv.ennovelas.net/",
-        "versionId": 1
-      }
-    ]
-  },
-  {
-    "name": "Aniyomi: EstrenosDoramas",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.estrenosdoramas",
-    "apk": "aniyomi-es.estrenosdoramas-v14.13.apk",
-    "lang": "es",
-    "code": 13,
-    "version": "14.13",
-    "nsfw": 0,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "EstrenosDoramas",
-        "lang": "es",
-        "id": "9219401167730918156",
-        "baseUrl": "https://estrenosdoramas.es",
-        "versionId": 1
-      }
-    ]
-  },
-  {
-    "name": "Aniyomi: FanPelis",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.fanpelis",
-    "apk": "aniyomi-es.fanpelis-v14.18.apk",
-    "lang": "es",
-    "code": 18,
-    "version": "14.18",
-    "nsfw": 0,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "FanPelis",
-        "lang": "es",
-        "id": "1270541458457028378",
-        "baseUrl": "https://fanpelis.la",
-        "versionId": 1
-      }
-    ]
-  },
-  {
     "name": "Aniyomi: FlixLatam",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.flixlatam",
     "apk": "aniyomi-es.flixlatam-v14.19.apk",
@@ -2451,32 +2351,12 @@
     ]
   },
   {
-    "name": "Aniyomi: HentaiTk",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.hentaitk",
-    "apk": "aniyomi-es.hentaitk-v14.21.apk",
-    "lang": "es",
-    "code": 21,
-    "version": "14.21",
-    "nsfw": 1,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "HentaiTk",
-        "lang": "es",
-        "id": "7726637677864789742",
-        "baseUrl": "https://hentaitk.net",
-        "versionId": 1
-      }
-    ]
-  },
-  {
     "name": "Aniyomi: HomeCine",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.homecine",
-    "apk": "aniyomi-es.homecine-v14.14.apk",
+    "apk": "aniyomi-es.homecine-v14.15.apk",
     "lang": "es",
-    "code": 14,
-    "version": "14.14",
+    "code": 15,
+    "version": "14.15",
     "nsfw": 0,
     "hasReadme": 0,
     "hasChangelog": 0,
@@ -2485,7 +2365,7 @@
         "name": "HomeCine",
         "lang": "es",
         "id": "4683784015054845419",
-        "baseUrl": "https://homecine.cc",
+        "baseUrl": "https://www3.homecine.to",
         "versionId": 1
       }
     ]
@@ -2506,26 +2386,6 @@
         "lang": "es",
         "id": "6007374093317538838",
         "baseUrl": "https://jkanime.net",
-        "versionId": 1
-      }
-    ]
-  },
-  {
-    "name": "Aniyomi: Jkhentai",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.jkhentai",
-    "apk": "aniyomi-es.jkhentai-v14.10.apk",
-    "lang": "es",
-    "code": 10,
-    "version": "14.10",
-    "nsfw": 1,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "Jkhentai",
-        "lang": "es",
-        "id": "5893372327521334179",
-        "baseUrl": "https://www.jkhentai.net",
         "versionId": 1
       }
     ]
@@ -2631,26 +2491,6 @@
     ]
   },
   {
-    "name": "Aniyomi: LocoPelis",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.locopelis",
-    "apk": "aniyomi-es.locopelis-v14.31.apk",
-    "lang": "es",
-    "code": 31,
-    "version": "14.31",
-    "nsfw": 0,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "LocoPelis",
-        "lang": "es",
-        "id": "7685749277599065785",
-        "baseUrl": "https://www.locopelis.com",
-        "versionId": 1
-      }
-    ]
-  },
-  {
     "name": "Aniyomi: MetroSeries",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.metroseries",
     "apk": "aniyomi-es.metroseries-v14.27.apk",
@@ -2733,10 +2573,10 @@
   {
     "name": "Aniyomi: Pandrama",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.pandrama",
-    "apk": "aniyomi-es.pandrama-v14.6.apk",
+    "apk": "aniyomi-es.pandrama-v14.7.apk",
     "lang": "es",
-    "code": 6,
-    "version": "14.6",
+    "code": 7,
+    "version": "14.7",
     "nsfw": 0,
     "hasReadme": 0,
     "hasChangelog": 0,
@@ -2745,7 +2585,7 @@
         "name": "Pandrama",
         "lang": "es",
         "id": "8290662435507939982",
-        "baseUrl": "https://pandrama.com",
+        "baseUrl": "https://www.pandrama.tv",
         "versionId": 1
       }
     ]
@@ -2800,26 +2640,6 @@
         "lang": "es",
         "id": "4917265654298497443",
         "baseUrl": "https://ww5.pelisplushd.pe",
-        "versionId": 1
-      }
-    ]
-  },
-  {
-    "name": "Aniyomi: Samato",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.samatodenvideos",
-    "apk": "aniyomi-es.samatodenvideos-v14.1.apk",
-    "lang": "es",
-    "code": 1,
-    "version": "14.1",
-    "nsfw": 1,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "Samato's Den: Videos",
-        "lang": "es",
-        "id": "9061916959875958361",
-        "baseUrl": "https://samatoden.blogspot.com",
         "versionId": 1
       }
     ]
@@ -2987,66 +2807,6 @@
         "lang": "es",
         "id": "8167780943978050375",
         "baseUrl": "https://www1.verpelis.top",
-        "versionId": 1
-      }
-    ]
-  },
-  {
-    "name": "Aniyomi: VerSeriesOnline",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.verseriesonline",
-    "apk": "aniyomi-es.verseriesonline-v14.11.apk",
-    "lang": "es",
-    "code": 11,
-    "version": "14.11",
-    "nsfw": 0,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "VerSeriesOnline",
-        "lang": "es",
-        "id": "8058040181507333420",
-        "baseUrl": "https://www.verseriesonline.net",
-        "versionId": 1
-      }
-    ]
-  },
-  {
-    "name": "Aniyomi: zeroanime",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.zeroanime",
-    "apk": "aniyomi-es.zeroanime-v14.7.apk",
-    "lang": "es",
-    "code": 7,
-    "version": "14.7",
-    "nsfw": 0,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "zeroanime",
-        "lang": "es",
-        "id": "2089287837152010776",
-        "baseUrl": "https://www4.zeroanime.xyz",
-        "versionId": 1
-      }
-    ]
-  },
-  {
-    "name": "Aniyomi: Zonaleros",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.zonaleros",
-    "apk": "aniyomi-es.zonaleros-v14.11.apk",
-    "lang": "es",
-    "code": 11,
-    "version": "14.11",
-    "nsfw": 0,
-    "hasReadme": 0,
-    "hasChangelog": 0,
-    "sources": [
-      {
-        "name": "Zonaleros",
-        "lang": "es",
-        "id": "7487458127391606163",
-        "baseUrl": "https://www.zona-leros.com",
         "versionId": 1
       }
     ]
