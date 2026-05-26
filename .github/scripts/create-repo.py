@@ -106,3 +106,30 @@ with (REPO_DIR / "index.json").open("w", encoding="utf-8") as f:
 
 with (REPO_DIR / "index.min.json").open("w", encoding="utf-8") as f:
     json.dump(index_min_data, f, ensure_ascii=False, separators=(",", ":"))
+
+# Aniyomi/Mihon require a repo.json with the signing certificate fingerprint.
+# The fingerprint is read from an actual signed APK so it always matches the
+# key used by the CI to sign the extensions.
+SHA256_REGEX = re.compile(r"SHA-256 digest: ([0-9a-f]+)")
+
+sample_apk = next(REPO_APK_DIR.iterdir())
+certs = subprocess.check_output(
+    [
+        ANDROID_BUILD_TOOLS / "apksigner",
+        "verify",
+        "--print-certs",
+        sample_apk,
+    ]
+).decode()
+signing_key_fingerprint = SHA256_REGEX.search(certs).group(1)
+
+repo_meta = {
+    "meta": {
+        "name": "Kohi-den extensions",
+        "website": "https://keyferv.github.io/kohi-den-extensions",
+        "signingKeyFingerprint": signing_key_fingerprint,
+    }
+}
+
+with (REPO_DIR / "repo.json").open("w", encoding="utf-8") as f:
+    json.dump(repo_meta, f, ensure_ascii=False)
