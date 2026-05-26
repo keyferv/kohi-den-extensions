@@ -130,7 +130,16 @@ class Animefenix : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override fun episodeListParse(response: Response): List<SEpisode> {
         val document = response.asJsoup()
-        return document.select("#episodes-container a.episode-card").map {
+        val episodesFromPage = document.select("#episodes-container a.episode-card")
+        val elements = if (episodesFromPage.isNotEmpty()) {
+            episodesFromPage
+        } else {
+            val slug = response.request.url.encodedPath.substringAfterLast("/").ifBlank { return emptyList() }
+            val ajaxResponse = client.newCall(GET("$baseUrl/$slug?id=$slug&load=episodes&start=0", headers)).execute()
+            ajaxResponse.asJsoup().select("a.episode-card")
+        }
+
+        return elements.map {
             val title = it.selectFirst(".ep-title")?.text().orEmpty()
             SEpisode.create().apply {
                 name = title
