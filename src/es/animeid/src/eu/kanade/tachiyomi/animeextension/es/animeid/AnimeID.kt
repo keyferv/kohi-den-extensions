@@ -84,7 +84,7 @@ class AnimeID : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
             val responseBody = client.newCall(GET("https://www.animeid.tv/ajax/caps?id=$animeId&ord=DESC&pag=$nextPage", headers))
                 .execute().asJsoup().body()?.toString()?.substringAfter("<body>")?.substringBefore("</body>") ?: ""
-            
+
             if (responseBody.isEmpty()) break
 
             val jObject = try { json.decodeFromString<JsonObject>(responseBody) } catch (_: Exception) { null }

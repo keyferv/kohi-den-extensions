@@ -1,0 +1,1459 @@
+{
+  "name": "FANPELIS - Peliculas, Series, Animes Online HD",
+  "description": "",
+  "url": "https://fanpelis.to",
+  "home": "https://fanpelis.to",
+  "gmt_offset": "0",
+  "timezone_string": "",
+  "page_for_posts": 0,
+  "page_on_front": 0,
+  "show_on_front": "posts",
+  "namespaces": [
+    "oembed/1.0",
+    "wpf/v1",
+    "litespeed/v1",
+    "litespeed/v3",
+    "yoast/v1",
+    "spc/v1",
+    "carbon-fields/v1",
+    "wp/v2",
+    "wp-site-health/v1",
+    "wp-block-editor/v1",
+    "wp-abilities/v1"
+  ],
+  "authentication": {
+    "application-passwords": {
+      "endpoints": "@{authorization=https://fanpelis.to/wp-admin/authorize-application.php}"
+    }
+  },
+  "routes": {
+    "/": {
+      "namespace": "",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/batch/v1": {
+      "namespace": "",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/oembed/1.0": {
+      "namespace": "oembed/1.0",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/oembed/1.0/embed": {
+      "namespace": "oembed/1.0",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/oembed/1.0/proxy": {
+      "namespace": "oembed/1.0",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1": {
+      "namespace": "wpf/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1/qr": {
+      "namespace": "wpf/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1/episodes": {
+      "namespace": "wpf/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1/cast": {
+      "namespace": "wpf/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1/complaint": {
+      "namespace": "wpf/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1/resolve-complaint": {
+      "namespace": "wpf/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1/rate-post": {
+      "namespace": "wpf/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1/auth/login": {
+      "namespace": "wpf/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1/auth/register": {
+      "namespace": "wpf/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1/auth/register/captcha": {
+      "namespace": "wpf/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wpf/v1/auth/update-user": {
+      "namespace": "wpf/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v1": {
+      "namespace": "litespeed/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v1/toggle_crawler_state": {
+      "namespace": "litespeed/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v1/tool/check_ip": {
+      "namespace": "litespeed/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v3": {
+      "namespace": "litespeed/v3",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v3/ip_validate": {
+      "namespace": "litespeed/v3",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v3/wp_rest_echo": {
+      "namespace": "litespeed/v3",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v3/ping": {
+      "namespace": "litespeed/v3",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v3/cdn_status": {
+      "namespace": "litespeed/v3",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v1/notify_img": {
+      "namespace": "litespeed/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v1/notify_ccss": {
+      "namespace": "litespeed/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v1/notify_ucss": {
+      "namespace": "litespeed/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v1/notify_vpi": {
+      "namespace": "litespeed/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v3/err_domains": {
+      "namespace": "litespeed/v3",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/litespeed/v1/check_img": {
+      "namespace": "litespeed/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/file_size": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/statistics": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/ai_generator/callback": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/ai_generator/refresh_callback": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/ai_generator/consent": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/ai/free_sparks": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/ai_generator/bust_subscription_cache": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/ai_generator/get_suggestions": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/ai_generator/get_usage": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/new-content-type-visibility/dismiss-post-type": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/new-content-type-visibility/dismiss-taxonomy": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/readability_scores": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/seo_scores": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/introductions/(?P<introduction_id>[\\w-]+)/seen": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": ""
+    },
+    "/yoast/v1/wistia_embed_permission": {
+      "namespace": "yoast/v1",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/available_posts": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/alerts/dismiss": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/configuration/site_representation": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/configuration/social_profiles": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/configuration/check_capability": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/configuration/enable_tracking": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/configuration/save_configuration_state": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/configuration/get_configuration_state": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/import/(?P<plugin>[\\w-]+)/(?P<type>[\\w-]+)": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": ""
+    },
+    "/yoast/v1/get_head": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/indexing/posts": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/indexing/terms": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/indexing/post-type-archives": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/indexing/general": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/indexing/prepare": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/indexing/indexables-complete": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/indexing/complete": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/link-indexing/posts": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/link-indexing/terms": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/integrations/set_active": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/meta/search": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/semrush/authenticate": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/semrush/country_code": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/semrush/related_keyphrases": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/wincher/authorization-url": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/wincher/authenticate": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/wincher/keyphrases/track": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/wincher/keyphrases": {
+      "namespace": "yoast/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/wincher/keyphrases/untrack": {
+      "namespace": "yoast/v1",
+      "methods": "DELETE",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/wincher/account/limit": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/wincher/account/upgrade-campaign": {
+      "namespace": "yoast/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/yoast/v1/workouts": {
+      "namespace": "yoast/v1",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/cache/purge": {
+      "namespace": "spc/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/cache/test": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/cache/purge-varnish": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/logs/clear": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/logs/get": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/preloader/start": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/config/import": {
+      "namespace": "spc/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/toggle-license": {
+      "namespace": "spc/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/settings/reset": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/settings/wizard": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/settings/update": {
+      "namespace": "spc/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/cloudflare/connect": {
+      "namespace": "spc/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/cloudflare/disconnect": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/cloudflare/confirm-zone-id": {
+      "namespace": "spc/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/database/optimize": {
+      "namespace": "spc/v1",
+      "methods": "DELETE",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/cloudflare/analytics": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/cloudflare/repair-rule": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/notice/dismiss": {
+      "namespace": "spc/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/assets/save-rules": {
+      "namespace": "spc/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/optimizations": {
+      "namespace": "spc/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/spc/v1/cached-pages": {
+      "namespace": "spc/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/carbon-fields/v1": {
+      "namespace": "carbon-fields/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/carbon-fields/v1/posts/(?P<id>\\d+)": {
+      "namespace": "carbon-fields/v1",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/carbon-fields/v1/terms/(?P<id>\\d+)": {
+      "namespace": "carbon-fields/v1",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/carbon-fields/v1/users/(?P<id>\\d+)": {
+      "namespace": "carbon-fields/v1",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/carbon-fields/v1/comments/(?P<id>\\d+)": {
+      "namespace": "carbon-fields/v1",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/carbon-fields/v1/options": {
+      "namespace": "carbon-fields/v1",
+      "methods": "GET POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/carbon-fields/v1/association": {
+      "namespace": "carbon-fields/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/carbon-fields/v1/association/options": {
+      "namespace": "carbon-fields/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/carbon-fields/v1/attachment": {
+      "namespace": "carbon-fields/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/carbon-fields/v1/block-renderer": {
+      "namespace": "carbon-fields/v1",
+      "methods": "POST",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/posts": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/posts/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/posts/(?P<parent>[\\d]+)/revisions": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/posts/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET DELETE",
+      "endpoints": " "
+    },
+    "/wp/v2/posts/(?P<id>[\\d]+)/autosaves": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " "
+    },
+    "/wp/v2/posts/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/pages": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/pages/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/pages/(?P<parent>[\\d]+)/revisions": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/pages/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET DELETE",
+      "endpoints": " "
+    },
+    "/wp/v2/pages/(?P<id>[\\d]+)/autosaves": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " "
+    },
+    "/wp/v2/pages/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/media": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/media/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/media/(?P<id>[\\d]+)/post-process": {
+      "namespace": "wp/v2",
+      "methods": "POST",
+      "endpoints": ""
+    },
+    "/wp/v2/media/(?P<id>[\\d]+)/edit": {
+      "namespace": "wp/v2",
+      "methods": "POST",
+      "endpoints": ""
+    },
+    "/wp/v2/menu-items": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/menu-items/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/menu-items/(?P<id>[\\d]+)/autosaves": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " "
+    },
+    "/wp/v2/menu-items/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/blocks": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/blocks/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/blocks/(?P<parent>[\\d]+)/revisions": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/blocks/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET DELETE",
+      "endpoints": " "
+    },
+    "/wp/v2/blocks/(?P<id>[\\d]+)/autosaves": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " "
+    },
+    "/wp/v2/blocks/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/templates/(?P<parent>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/revisions": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/templates/(?P<parent>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/revisions/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET DELETE",
+      "endpoints": " "
+    },
+    "/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/autosaves": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " "
+    },
+    "/wp/v2/templates/(?P<parent>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/autosaves/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/templates": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/templates/lookup": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/template-parts/(?P<parent>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/revisions": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/template-parts/(?P<parent>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/revisions/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET DELETE",
+      "endpoints": " "
+    },
+    "/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/autosaves": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " "
+    },
+    "/wp/v2/template-parts/(?P<parent>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/autosaves/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/template-parts": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/template-parts/lookup": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/global-styles/(?P<parent>[\\d]+)/revisions": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/global-styles/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/global-styles/themes/(?P<stylesheet>[\\/\\s%\\w\\.\\(\\)\\[\\]\\@_\\-]+)/variations": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/global-styles/themes/(?P<stylesheet>[^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/global-styles/(?P<id>[\\/\\d+]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH",
+      "endpoints": " "
+    },
+    "/wp/v2/navigation": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/navigation/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/navigation/(?P<parent>[\\d]+)/revisions": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/navigation/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET DELETE",
+      "endpoints": " "
+    },
+    "/wp/v2/navigation/(?P<id>[\\d]+)/autosaves": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " "
+    },
+    "/wp/v2/navigation/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/font-families": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/font-families/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/font-families/(?P<font_family_id>[\\d]+)/font-faces": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " "
+    },
+    "/wp/v2/font-families/(?P<font_family_id>[\\d]+)/font-faces/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET DELETE",
+      "endpoints": " "
+    },
+    "/wp/v2/types": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/types/(?P<type>[\\w-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/statuses": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/statuses/(?P<status>[\\w-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/taxonomies": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/taxonomies/(?P<taxonomy>[\\w-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/categories": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/categories/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/tags": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/tags/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/menus": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/menus/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/wp_pattern_category": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/wp_pattern_category/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/genres": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/genres/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/quality": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/quality/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/lang": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/lang/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/cast": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/cast/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/director": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/director/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/creator": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/creator/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/studio": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/studio/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/years": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/years/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/providers": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/providers/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/users": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/users/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/users/me": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/users/(?P<user_id>(?:[\\d]+|me))/application-passwords": {
+      "namespace": "wp/v2",
+      "methods": "GET POST DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/users/(?P<user_id>(?:[\\d]+|me))/application-passwords/introspect": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/users/(?P<user_id>(?:[\\d]+|me))/application-passwords/(?P<uuid>[\\w\\-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/comments": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/comments/(?P<id>[\\d]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/search": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/block-renderer/(?P<name>[a-z0-9-]+/[a-z0-9-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": ""
+    },
+    "/wp/v2/block-types": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/block-types/(?P<namespace>[a-zA-Z0-9_-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/block-types/(?P<namespace>[a-zA-Z0-9_-]+)/(?P<name>[a-zA-Z0-9_-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/settings": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/themes": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/themes/(?P<stylesheet>[^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/plugins": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/plugins/(?P<plugin>[^.\\/]+(?:\\/[^.\\/]+)?)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/sidebars": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/sidebars/(?P<id>[\\w-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH",
+      "endpoints": " "
+    },
+    "/wp/v2/widget-types": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/widget-types/(?P<id>[a-zA-Z0-9_-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp/v2/widget-types/(?P<id>[a-zA-Z0-9_-]+)/encode": {
+      "namespace": "wp/v2",
+      "methods": "POST",
+      "endpoints": ""
+    },
+    "/wp/v2/widget-types/(?P<id>[a-zA-Z0-9_-]+)/render": {
+      "namespace": "wp/v2",
+      "methods": "POST",
+      "endpoints": ""
+    },
+    "/wp/v2/widgets": {
+      "namespace": "wp/v2",
+      "methods": "GET POST",
+      "endpoints": " ",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/widgets/(?P<id>[\\w\\-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": "  "
+    },
+    "/wp/v2/block-directory/search": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/pattern-directory/patterns": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/block-patterns/patterns": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/block-patterns/categories": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-site-health/v1": {
+      "namespace": "wp-site-health/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-site-health/v1/tests/background-updates": {
+      "namespace": "wp-site-health/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-site-health/v1/tests/loopback-requests": {
+      "namespace": "wp-site-health/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-site-health/v1/tests/https-status": {
+      "namespace": "wp-site-health/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-site-health/v1/tests/dotorg-communication": {
+      "namespace": "wp-site-health/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-site-health/v1/tests/authorization-header": {
+      "namespace": "wp-site-health/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-site-health/v1/directory-sizes": {
+      "namespace": "wp-site-health/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-site-health/v1/tests/page-cache": {
+      "namespace": "wp-site-health/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-block-editor/v1": {
+      "namespace": "wp-block-editor/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-block-editor/v1/url-details": {
+      "namespace": "wp-block-editor/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/menu-locations": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/menu-locations/(?P<location>[\\w-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp-block-editor/v1/export": {
+      "namespace": "wp-block-editor/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-block-editor/v1/navigation-fallback": {
+      "namespace": "wp-block-editor/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/font-collections": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp/v2/font-collections/(?P<slug>[\\/\\w-]+)": {
+      "namespace": "wp/v2",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp-abilities/v1": {
+      "namespace": "wp-abilities/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-abilities/v1/categories": {
+      "namespace": "wp-abilities/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-abilities/v1/categories/(?P<slug>[a-z0-9]+(?:-[a-z0-9]+)*)": {
+      "namespace": "wp-abilities/v1",
+      "methods": "GET",
+      "endpoints": ""
+    },
+    "/wp-abilities/v1/abilities/(?P<name>[a-zA-Z0-9\\-\\/]+?)/run": {
+      "namespace": "wp-abilities/v1",
+      "methods": "GET POST PUT PATCH DELETE",
+      "endpoints": ""
+    },
+    "/wp-abilities/v1/abilities": {
+      "namespace": "wp-abilities/v1",
+      "methods": "GET",
+      "endpoints": "",
+      "_links": "@{self=System.Object[]}"
+    },
+    "/wp-abilities/v1/abilities/(?P<name>[a-zA-Z0-9\\-\\/]+)": {
+      "namespace": "wp-abilities/v1",
+      "methods": "GET",
+      "endpoints": ""
+    }
+  },
+  "site_logo": 0,
+  "site_icon": 11072,
+  "site_icon_url": "https://fanpelis.to/wp-content/uploads/2025/02/cropped-play-button-icon-trendy-flat-260nw-752745979-e1738708582632.webp",
+  "_links": {
+    "help": [
+      "@{href=https://developer.wordpress.org/rest-api/}"
+    ],
+    "wp:featuredmedia": [
+      "@{embeddable=True; type=site_icon; href=https://fanpelis.to/wp-json/wp/v2/media/11072}"
+    ],
+    "curies": [
+      "@{name=wp; href=https://api.w.org/{rel}; templated=True}"
+    ]
+  }
+}

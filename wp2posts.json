@@ -1,0 +1,108 @@
+[
+  {
+    "id": 1,
+    "date": "2025-02-04T21:01:18",
+    "date_gmt": "2025-02-04T21:01:18",
+    "guid": {
+      "rendered": "http://fanpelis.to/?p=1"
+    },
+    "modified": "2025-02-04T21:01:18",
+    "modified_gmt": "2025-02-04T21:01:18",
+    "slug": "hola-mundo",
+    "status": "publish",
+    "type": "post",
+    "link": "https://fanpelis.to/hola-mundo/",
+    "title": {
+      "rendered": "¡Hola mundo!"
+    },
+    "content": {
+      "rendered": "\n<p>Bienvenido a WordPress. Esta es tu primera entrada. Edítala o bórrala, ¡luego empieza a escribir!</p>\n",
+      "protected": false
+    },
+    "excerpt": {
+      "rendered": "<p>Bienvenido a WordPress. Esta es tu primera entrada. Edítala o bórrala, ¡luego empieza a escribir!</p>\n",
+      "protected": false
+    },
+    "author": 1,
+    "featured_media": 0,
+    "comment_status": "open",
+    "ping_status": "open",
+    "sticky": false,
+    "template": "",
+    "format": "standard",
+    "meta": {
+      "footnotes": ""
+    },
+    "categories": [
+      1
+    ],
+    "tags": [],
+    "class_list": [
+      "post-1",
+      "post",
+      "type-post",
+      "status-publish",
+      "format-standard",
+      "hentry",
+      "category-sin-categoria"
+    ],
+    "yoast_head": "<!-- This site is optimized with the Yoast SEO plugin v25.8 - https://yoast.com/wordpress/plugins/seo/ -->\n<title>¡Hola mundo! - FANPELIS - Peliculas, Series, Animes Online HD</title>\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" />\n<link rel=\"canonical\" href=\"https://fanpelis.to/hola-mundo/\" />\n<meta property=\"og:locale\" content=\"es_MX\" />\n<meta property=\"og:type\" content=\"article\" />\n<meta property=\"og:title\" content=\"¡Hola mundo! - FANPELIS - Peliculas, Series, Animes Online HD\" />\n<meta property=\"og:description\" content=\"Bienvenido a WordPress. Esta es tu primera entrada. Edítala o bórrala, ¡luego empieza a escribir!\" />\n<meta property=\"og:url\" content=\"https://fanpelis.to/hola-mundo/\" />\n<meta property=\"og:site_name\" content=\"FANPELIS - Peliculas, Series, Animes Online HD\" />\n<meta property=\"article:published_time\" content=\"2025-02-04T21:01:18+00:00\" />\n<meta name=\"author\" content=\"admin\" />\n<meta name=\"twitter:card\" content=\"summary_large_image\" />\n<meta name=\"twitter:label1\" content=\"Escrito por\" />\n\t<meta name=\"twitter:data1\" content=\"admin\" />\n<script type=\"application/ld+json\" class=\"yoast-schema-graph\">{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"WebPage\",\"@id\":\"https://fanpelis.to/hola-mundo/\",\"url\":\"https://fanpelis.to/hola-mundo/\",\"name\":\"¡Hola mundo! - FANPELIS - Peliculas, Series, Animes Online HD\",\"isPartOf\":{\"@id\":\"https://fanpelis.to/#website\"},\"datePublished\":\"2025-02-04T21:01:18+00:00\",\"author\":{\"@id\":\"https://fanpelis.to/#/schema/person/90e1a843e3925d25093352a341b9abb8\"},\"breadcrumb\":{\"@id\":\"https://fanpelis.to/hola-mundo/#breadcrumb\"},\"inLanguage\":\"es\",\"potentialAction\":[{\"@type\":\"ReadAction\",\"target\":[\"https://fanpelis.to/hola-mundo/\"]}]},{\"@type\":\"BreadcrumbList\",\"@id\":\"https://fanpelis.to/hola-mundo/#breadcrumb\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Inicio\",\"item\":\"https://fanpelis.to/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"¡Hola mundo!\"}]},{\"@type\":\"WebSite\",\"@id\":\"https://fanpelis.to/#website\",\"url\":\"https://fanpelis.to/\",\"name\":\"FANPELIS - Peliculas, Series, Animes Online HD\",\"description\":\"\",\"alternateName\":\"Fanpelis es tu sitio para ver películas, series y animes online. Disfruta estrenos y clásicos en HD, sin interrupciones y gratis. ¡Todo el entretenimiento en un solo lugar!\",\"potentialAction\":[{\"@type\":\"SearchAction\",\"target\":{\"@type\":\"EntryPoint\",\"urlTemplate\":\"https://fanpelis.to/?s={search_term_string}\"},\"query-input\":{\"@type\":\"PropertyValueSpecification\",\"valueRequired\":true,\"valueName\":\"search_term_string\"}}],\"inLanguage\":\"es\"},{\"@type\":\"Person\",\"@id\":\"https://fanpelis.to/#/schema/person/90e1a843e3925d25093352a341b9abb8\",\"name\":\"admin\",\"image\":{\"@type\":\"ImageObject\",\"inLanguage\":\"es\",\"@id\":\"https://fanpelis.to/#/schema/person/image/\",\"url\":\"https://fanpelis.to/wp-content/litespeed/avatar/cedec8555285903d1e16dbbba705386b.jpg?ver=1772595543\",\"contentUrl\":\"https://fanpelis.to/wp-content/litespeed/avatar/cedec8555285903d1e16dbbba705386b.jpg?ver=1772595543\",\"caption\":\"admin\"},\"sameAs\":[\"http://fanpelis.to\"]}]}</script>\n<!-- / Yoast SEO plugin. -->",
+    "yoast_head_json": {
+      "title": "¡Hola mundo! - FANPELIS - Peliculas, Series, Animes Online HD",
+      "robots": {
+        "index": "index",
+        "follow": "follow",
+        "max-snippet": "max-snippet:-1",
+        "max-image-preview": "max-image-preview:large",
+        "max-video-preview": "max-video-preview:-1"
+      },
+      "canonical": "https://fanpelis.to/hola-mundo/",
+      "og_locale": "es_MX",
+      "og_type": "article",
+      "og_title": "¡Hola mundo! - FANPELIS - Peliculas, Series, Animes Online HD",
+      "og_description": "Bienvenido a WordPress. Esta es tu primera entrada. Edítala o bórrala, ¡luego empieza a escribir!",
+      "og_url": "https://fanpelis.to/hola-mundo/",
+      "og_site_name": "FANPELIS - Peliculas, Series, Animes Online HD",
+      "article_published_time": "2025-02-04T16:01:18-05:00",
+      "author": "admin",
+      "twitter_card": "summary_large_image",
+      "twitter_misc": {
+        "Escrito por": "admin"
+      },
+      "schema": {
+        "@context": "https://schema.org",
+        "@graph": "   "
+      }
+    },
+    "_links": {
+      "self": [
+        "@{href=https://fanpelis.to/wp-json/wp/v2/posts/1; targetHints=}"
+      ],
+      "collection": [
+        "@{href=https://fanpelis.to/wp-json/wp/v2/posts}"
+      ],
+      "about": [
+        "@{href=https://fanpelis.to/wp-json/wp/v2/types/post}"
+      ],
+      "author": [
+        "@{embeddable=True; href=https://fanpelis.to/wp-json/wp/v2/users/1}"
+      ],
+      "replies": [
+        "@{embeddable=True; href=https://fanpelis.to/wp-json/wp/v2/comments?post=1}"
+      ],
+      "version-history": [
+        "@{count=0; href=https://fanpelis.to/wp-json/wp/v2/posts/1/revisions}"
+      ],
+      "wp:attachment": [
+        "@{href=https://fanpelis.to/wp-json/wp/v2/media?parent=1}"
+      ],
+      "wp:term": [
+        "@{taxonomy=category; embeddable=True; href=https://fanpelis.to/wp-json/wp/v2/categories?post=1}",
+        "@{taxonomy=post_tag; embeddable=True; href=https://fanpelis.to/wp-json/wp/v2/tags?post=1}"
+      ],
+      "curies": [
+        "@{name=wp; href=https://api.w.org/{rel}; templated=True}"
+      ]
+    }
+  }
+]
