@@ -22,19 +22,18 @@ import eu.kanade.tachiyomi.lib.voeextractor.VoeExtractor
 import eu.kanade.tachiyomi.lib.youruploadextractor.YourUploadExtractor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
-import eu.kanade.tachiyomi.util.parallelCatchingFlatMapBlocking
-import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.Calendar
 
 class HomeCine : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override val name = "HomeCine"
 
-    override val baseUrl = "https://homecine.cc"
+    override val baseUrl = "https://www3.homecine.to"
 
     override val lang = "es"
 
@@ -67,21 +66,43 @@ class HomeCine : ConfigurableAnimeSource, AnimeHttpSource() {
         )
     }
 
-    override fun popularAnimeRequest(page: Int) = GET("$baseUrl/cartelera-series/page/$page", headers)
+    // Cached URL of the latest "release-year" listing (e.g. /release-year/2026).
+    // Resolved from the site menu so it keeps working when the year rolls over.
+    private var cachedRecientesUrl: String? = null
+
+    private fun recientesUrl(): String {
+        cachedRecientesUrl?.let { return it }
+        val resolved = runCatching {
+            val document = client.newCall(GET("$baseUrl/cartelera", headers)).execute().asJsoup()
+            document.select("li.menu-item-object-release-year a[href*=/release-year/]")
+                .ifEmpty { document.select("a[href*=/release-year/]") }
+                .mapNotNull { it.attr("abs:href").trimEnd('/').takeIf(String::isNotBlank) }
+                .maxByOrNull { it.substringAfterLast("/").toIntOrNull() ?: 0 }
+        }.getOrNull()
+        val url = resolved ?: "$baseUrl/release-year/${Calendar.getInstance().get(Calendar.YEAR)}"
+        cachedRecientesUrl = url
+        return url
+    }
+
+    override fun popularAnimeRequest(page: Int): Request {
+        val url = recientesUrl()
+        return if (page > 1) GET("$url/page/$page", headers) else GET(url, headers)
+    }
 
     override fun popularAnimeParse(response: Response): AnimesPage {
         val document = response.asJsoup()
-        val elements = document.select(".post")
-        val nextPage = document.select(".nav-links .current ~ a").any()
-        val animeList = elements.map { element ->
+        val animeList = document.select("div.movies-list .ml-item").map { element ->
             SAnime.create().apply {
-                setUrlWithoutDomain(element.selectFirst(".lnk-blk")?.attr("abs:href") ?: "")
-                title = element.selectFirst(".entry-header .entry-title")?.text() ?: ""
-                description = element.select(".entry-content p").text() ?: ""
-                thumbnail_url = element.selectFirst(".post-thumbnail figure img")?.let { getImageUrl(it) }
+                val link = element.selectFirst("a.ml-mask")
+                setUrlWithoutDomain(link?.attr("abs:href").orEmpty())
+                title = link?.attr("oldtitle").takeUnless { it.isNullOrBlank() }
+                    ?: element.selectFirst(".mli-info h2")?.text()
+                    ?: element.selectFirst("img.mli-thumb")?.attr("alt").orEmpty()
+                thumbnail_url = element.selectFirst("img.mli-thumb")?.let { getImageUrl(it) }
             }
         }
-        return AnimesPage(animeList, nextPage)
+        val hasNextPage = document.selectFirst("ul.pagination li.active ~ li a.page.larger") != null
+        return AnimesPage(animeList, hasNextPage)
     }
 
     override fun latestUpdatesRequest(page: Int) = popularAnimeRequest(page)
@@ -94,17 +115,26 @@ class HomeCine : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override fun animeDetailsParse(response: Response): SAnime {
         val document = response.asJsoup()
+        val isSeries = response.request.url.toString().contains("/series/")
         return SAnime.create().apply {
-            title = document.selectFirst("aside .entry-header .entry-title")?.text() ?: ""
-            description = document.select("aside .description p:not([class])").joinToString { it.text() }
-            thumbnail_url = document.selectFirst(".post-thumbnail img")?.let { getImageUrl(it)?.replace("/w185/", "/w500/") }
-            genre = document.select(".genres a").joinToString { it.text() }
-            status = if (document.location().contains("pelicula")) SAnime.COMPLETED else SAnime.UNKNOWN
+            title = document.selectFirst(".mvic-desc [itemprop=name]")?.text().orEmpty()
+            description = document.selectFirst(".mvic-desc .desc")?.text().orEmpty()
+            thumbnail_url = document.selectFirst(".mvic-thumb img")?.let { getImageUrl(it)?.replace("/w185/", "/w500/") }
+            genre = document.select(".mvici-left a[href*=/genre/]").joinToString { it.text() }
+            status = when {
+                !isSeries -> SAnime.COMPLETED
+                else -> when {
+                    document.select(".mvici-right p:contains(TV Status) span").text().contains("Returning", true) -> SAnime.ONGOING
+                    document.select(".mvici-right p:contains(TV Status) span").text().let { it.contains("Canceled", true) || it.contains("Ended", true) } -> SAnime.COMPLETED
+                    else -> SAnime.UNKNOWN
+                }
+            }
         }
     }
 
     private fun getImageUrl(element: Element): String? {
         return when {
+            element.hasAttr("data-original") -> element.attr("abs:data-original")
             element.hasAttr("data-src") -> element.attr("abs:data-src")
             element.hasAttr("src") -> element.attr("abs:src")
             else -> null
@@ -113,80 +143,51 @@ class HomeCine : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override fun episodeListParse(response: Response): List<SEpisode> {
         val document = response.asJsoup()
-        val referer = response.request.url.toString()
-        return if (referer.contains("pelicula")) {
-            listOf(
+        val url = response.request.url.toString()
+        val seasons = document.select("#seasons .tvseason")
+
+        // Movies have no season block -> single playable entry
+        if (seasons.isEmpty()) {
+            return listOf(
                 SEpisode.create().apply {
                     episode_number = 1f
                     name = "Película"
-                    setUrlWithoutDomain(referer)
+                    setUrlWithoutDomain(url)
                 },
             )
-        } else {
-            val chunkSize = Runtime.getRuntime().availableProcessors()
-            document.select(".sel-temp a")
-                .sortedByDescending { it.attr("data-season") }
-                .chunked(chunkSize).flatMap { chunk ->
-                    chunk.parallelCatchingFlatMapBlocking { season ->
-                        getDetailSeason(season, referer)
-                    }
-                }.sortedByDescending {
-                    it.name.substringBeforeLast("-")
-                }
         }
-    }
 
-    private fun getDetailSeason(element: Element, referer: String): List<SEpisode> {
-        return try {
-            val post = element.attr("data-post")
-            val season = element.attr("data-season")
-            val formBody = FormBody.Builder()
-                .add("action", "action_select_season")
-                .add("season", season)
-                .add("post", post)
-                .build()
-
-            val request = Request.Builder()
-                .url("$baseUrl/wp-admin/admin-ajax.php")
-                .post(formBody)
-                .header("Origin", baseUrl)
-                .header("Referer", referer)
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .build()
-            val detail = client.newCall(request).execute().asJsoup()
-
-            detail.select(".post").reversed().mapIndexed { idx, it ->
-                val epNumber = try {
-                    it.select(".entry-header .num-epi").text().substringAfter("x").substringBefore("–").trim()
-                } catch (_: Exception) { "${idx + 1}" }
-
+        // Series list every episode inline under #seasons (no AJAX needed)
+        return seasons.flatMap { season ->
+            val seasonNum = Regex("\\d+").find(season.selectFirst(".les-title strong")?.text().orEmpty())
+                ?.value?.toIntOrNull() ?: 1
+            season.select(".les-content a").map { ep ->
+                val epNum = Regex("\\d+").find(ep.text().trim())?.value?.toIntOrNull() ?: 1
                 SEpisode.create().apply {
-                    setUrlWithoutDomain(it.select("a").attr("abs:href"))
-                    name = "T$season - Episodio $epNumber"
-                    episode_number = epNumber.toFloat()
+                    setUrlWithoutDomain(ep.attr("abs:href"))
+                    name = "T$seasonNum - Episodio $epNum"
+                    episode_number = (seasonNum * 1000 + epNum).toFloat()
                 }
             }
-        } catch (_: Exception) {
-            emptyList()
-        }
+        }.sortedByDescending { it.episode_number }
     }
 
     override fun videoListParse(response: Response): List<Video> {
         val document = response.asJsoup()
         val videoList = mutableListOf<Video>()
-        document.select(".aa-tbs-video a").forEach {
+        document.select(".player_nav .idTabs a[href^=#]").forEach {
             val prefix = runCatching {
-                val lang = it.select(".server").text().lowercase()
+                val label = it.text().lowercase()
                 when {
-                    lang.contains("latino") -> "[LAT]"
-                    lang.contains("castellano") -> "[CAST]"
-                    lang.contains("sub") || lang.contains("vose") -> "[SUB]"
+                    label.contains("latino") -> "[LAT]"
+                    label.contains("castellano") -> "[CAST]"
+                    label.contains("sub") || label.contains("vose") -> "[SUB]"
                     else -> ""
                 }
             }.getOrDefault("")
 
             val ide = it.attr("href")
-            var src = document.select("$ide iframe").attr("data-src").replace("#038;", "&").replace("&amp;", "")
+            var src = (document.selectFirst("$ide iframe")?.attr("abs:src") ?: "").replace("#038;", "&").replace("&amp;", "")
             try {
                 if (src.contains("home")) {
                     src = client.newCall(GET(src)).execute().asJsoup().selectFirst("iframe")?.attr("src") ?: ""

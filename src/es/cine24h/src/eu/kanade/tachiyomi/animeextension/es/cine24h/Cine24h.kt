@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.animeextension.es.cine24h
 
 import android.app.Application
 import android.content.SharedPreferences
+import android.util.Base64
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
@@ -37,6 +38,9 @@ open class Cine24h : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override val supportsLatest = true
 
+    // Site sits behind Cloudflare; use the client that can solve JS challenges.
+    override val client = network.cloudflareClient
+
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
     }
@@ -57,40 +61,45 @@ open class Cine24h : ConfigurableAnimeSource, AnimeHttpSource() {
             description = document.selectFirst(".Single .Description")?.text()
             genre = document.select(".Single .InfoList a").joinToString { it.text() }
             thumbnail_url = document.selectFirst(".Single .Image img")?.getImageUrl()?.replace("/w185/", "/w500/")
-            if (document.location().contains("/movie/")) {
+            if (document.location().contains("/peliculas/")) {
                 status = SAnime.COMPLETED
             } else {
-                val statusText = document.select(".InfoList .AAIco-adjust").map { it.text() }
-                    .find { "En Producción:" in it }?.substringAfter("En Producción:")?.trim()
-                status = when (statusText) { "Sí" -> SAnime.ONGOING else -> SAnime.COMPLETED }
+                val statusText = document.selectFirst(".SubTitle .Qlty")?.text().orEmpty()
+                status = when {
+                    statusText.contains("Returning", true) -> SAnime.ONGOING
+                    statusText.contains("Canceled", true) || statusText.contains("Ended", true) -> SAnime.COMPLETED
+                    else -> SAnime.UNKNOWN
+                }
             }
         }
         return animeDetails
     }
 
-    override fun popularAnimeRequest(page: Int) = GET("$baseUrl/peliculas-mas-vistas/page/$page", headers)
+    override fun popularAnimeRequest(page: Int): Request {
+        // "Most viewed" section was removed by the site; use "Estrenos" (releases) instead.
+        return if (page > 1) GET("$baseUrl/estrenos/page/$page/", headers) else GET("$baseUrl/estrenos/", headers)
+    }
 
     override fun popularAnimeParse(response: Response): AnimesPage {
         val document = response.asJsoup()
-        val elements = document.select(".TPost a:not([target])")
-        val nextPage = document.select(".wp-pagenavi .next").any()
-        val animeList = elements.map { element ->
-            val lang = element.select(".Langu .sprite").attr("class").lowercase()
-            val titleItem = element.selectFirst(".Title")?.text()?.trim() ?: ""
-            val link = element.attr("abs:href")
+        val animeList = document.select("li.TPostMv").map { element ->
+            val link = element.selectFirst("article.TPost > a")
+            val titleItem = element.selectFirst(".TPMvCn .Title")?.text()?.trim()
+                ?: element.selectFirst("article.TPost > a h2")?.text()?.trim().orEmpty()
+            val langs = element.select(".language-box .lang-item span").map { it.text().trim().uppercase() }
 
-            val prefix = when {
-                lang.contains("sub") || titleItem.lowercase().contains("(sub)") || link.contains("-sub") -> "\uD83C\uDDFA\uD83C\uDDF8 "
-                lang.contains("lat") || titleItem.lowercase().contains("(lat)") || link.contains("-lat") -> "\uD83C\uDDF2\uD83C\uDDFD "
-                lang.contains("esp") || titleItem.lowercase().contains("(es)") || link.contains("-es") -> "\uD83C\uDDEA\uD83C\uDDF8 "
-                else -> ""
+            val prefix = buildString {
+                if (langs.any { it.contains("LAT") }) append("\uD83C\uDDF2\uD83C\uDDFD ")
+                if (langs.any { it.contains("ESP") }) append("\uD83C\uDDEA\uD83C\uDDF8 ")
+                if (langs.any { it.contains("SUB") }) append("\uD83C\uDDFA\uD83C\uDDF8 ")
             }
             SAnime.create().apply {
                 title = prefix + titleItem
                 thumbnail_url = element.selectFirst(".Image img")?.getImageUrl()?.replace("/w185/", "/w300/")
-                setUrlWithoutDomain(link)
+                setUrlWithoutDomain(link?.attr("abs:href").orEmpty())
             }
         }
+        val nextPage = document.select(".wp-pagenavi a.nextpostslink, .wp-pagenavi .next").any()
         return AnimesPage(animeList, nextPage)
     }
 
@@ -116,7 +125,7 @@ open class Cine24h : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override fun episodeListParse(response: Response): List<SEpisode> {
         val document = response.asJsoup()
-        return if (document.location().contains("/movie/")) {
+        return if (document.location().contains("/peliculas/")) {
             listOf(
                 SEpisode.create().apply {
                     episode_number = 1f
@@ -128,8 +137,11 @@ open class Cine24h : ConfigurableAnimeSource, AnimeHttpSource() {
         } else {
             var episodeCounter = 1F
             document.select(".AABox").flatMap { season ->
-                val noSeason = season.select(".Title").text().substringAfter("Temporada").trim()
-                season.select(".AABox .TPTblCn tr").map { ep ->
+                val seasonText = season.selectFirst(".Title")?.text().orEmpty()
+                val noSeason = Regex("(?:Season|Temporada)\\s*(\\d+)").find(seasonText)?.groupValues?.get(1)
+                    ?: Regex("\\d+").findAll(seasonText).lastOrNull()?.value
+                    ?: "1"
+                season.select(".TPTblCn tbody tr").map { ep ->
                     SEpisode.create().apply {
                         episode_number = episodeCounter++
                         name = "T$noSeason - E${ep.select(".Num").text().trim()} - ${ep.select(".MvTbTtl a").text().trim()}"
@@ -144,10 +156,29 @@ open class Cine24h : ConfigurableAnimeSource, AnimeHttpSource() {
     override fun videoListParse(response: Response): List<Video> {
         val document = response.asJsoup()
 
-        return document.select(".TPlayerTb").map { org.jsoup.nodes.Entities.unescape(it.html()) }.parallelCatchingFlatMapBlocking {
-            val urlEmbed = it.substringAfter("src=\"").substringBefore("\"").replace("&#038;", "&")
-            val link = client.newCall(GET(urlEmbed)).execute().asJsoup().selectFirst("iframe")?.attr("src") ?: ""
-            serverVideoResolver(link)
+        // Each player option lives in .optns-bx with a base64-encoded trembed URL.
+        // The inline .TPlayerTb iframe is only the default option, so iterate them all.
+        val options = document.select(".optns-bx .optnslst li[data-src]")
+            .mapNotNull { li ->
+                val embedUrl = runCatching {
+                    String(Base64.decode(li.attr("data-src"), Base64.DEFAULT))
+                }.getOrNull()?.takeIf { it.startsWith("http") } ?: return@mapNotNull null
+                embedUrl to li.selectFirst("button span:not(.nmopt)")?.ownText()?.trim().orEmpty()
+            }
+            .ifEmpty {
+                document.select(".TPlayerTb iframe[src]").map { it.attr("abs:src") to "" }
+            }
+            .distinctBy { it.first }
+
+        return options.parallelCatchingFlatMapBlocking { (embedUrl, lang) ->
+            val link = client.newCall(GET(embedUrl, headers)).execute().asJsoup()
+                .selectFirst("iframe")?.attr("abs:src") ?: ""
+            val videos = serverVideoResolver(link)
+            if (lang.isBlank()) {
+                videos
+            } else {
+                videos.map { Video(it.url, "[$lang] ${it.quality}", it.videoUrl, it.headers) }
+            }
         }
     }
 
