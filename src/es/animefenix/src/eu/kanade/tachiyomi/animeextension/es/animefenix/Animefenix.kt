@@ -35,6 +35,7 @@ import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.net.URLDecoder
 
 class Animefenix : ConfigurableAnimeSource, AnimeHttpSource() {
 
@@ -44,7 +45,7 @@ class Animefenix : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override val lang = "es"
 
-    override val supportsLatest = false
+    override val supportsLatest = true
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
@@ -93,9 +94,27 @@ class Animefenix : ConfigurableAnimeSource, AnimeHttpSource() {
         return AnimesPage(animeList, nextPage)
     }
 
-    override fun latestUpdatesParse(response: Response) = throw UnsupportedOperationException()
+    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
 
-    override fun latestUpdatesRequest(page: Int) = throw UnsupportedOperationException()
+    override fun latestUpdatesParse(response: Response): AnimesPage {
+        val document = response.asJsoup()
+        val elements = document.select("a.text-white[href^=/ver/]")
+        val animeList = elements.mapNotNull { element ->
+            val chapterPath = element.attr("href")
+            val slug = chapterPath
+                .removePrefix("/ver/")
+                .replace(Regex("-\\d+$"), "")
+                .ifBlank { return@mapNotNull null }
+
+            SAnime.create().apply {
+                setUrlWithoutDomain("/$slug")
+                title = element.selectFirst("h3")?.text().orEmpty()
+                thumbnail_url = element.selectFirst("img")?.getImageUrl()
+            }
+        }.distinctBy { it.url }
+
+        return AnimesPage(animeList, false)
+    }
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
         val params = AnimeFenixFilters.getSearchParameters(filters)
@@ -111,11 +130,11 @@ class Animefenix : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override fun episodeListParse(response: Response): List<SEpisode> {
         val document = response.asJsoup()
-        return document.select(".divide-y li > a").map {
-            val title = it.select(".font-semibold").text()
+        return document.select("#episodes-container a.episode-card").map {
+            val title = it.selectFirst(".ep-title")?.text().orEmpty()
             SEpisode.create().apply {
                 name = title
-                episode_number = title.substringAfter("Episodio").toFloatOrNull() ?: 0F
+                episode_number = Regex("""(\d+(\.\d+)?)""").find(title)?.groupValues?.get(1)?.toFloatOrNull() ?: 0F
                 setUrlWithoutDomain(it.attr("abs:href"))
             }
         }
@@ -123,12 +142,26 @@ class Animefenix : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override fun videoListParse(response: Response): List<Video> {
         val document = response.asJsoup()
-        val script = document.selectFirst("script:containsData(var tabsArray)") ?: return emptyList()
-        return script.data().substringAfter("<iframe").split("src='")
-            .map { it.substringBefore("'").substringAfter("redirect.php?id=").trim() }
-            .parallelCatchingFlatMapBlocking { url ->
-                serverVideoResolver(url)
+        val scriptData = document.selectFirst("script:containsData(var tabsArray)")?.data().orEmpty()
+        val iframeUrls = Regex("""src=['"]([^'"]+)['"]""")
+            .findAll(scriptData)
+            .map { it.groupValues[1] }
+            .toList()
+
+        val downloadUrls = document.select("a[href*=/smart.php?url=]")
+            .map { it.attr("abs:href") }
+
+        val extractedUrls = (iframeUrls + downloadUrls)
+            .mapNotNull { raw ->
+                val normalized = raw.substringAfter("redirect.php?id=", raw).substringAfter("smart.php?url=", raw)
+                runCatching { URLDecoder.decode(normalized, "UTF-8") }.getOrNull()?.trim()
             }
+            .filter { it.startsWith("http") }
+            .distinct()
+
+        return extractedUrls.parallelCatchingFlatMapBlocking { url ->
+            serverVideoResolver(url)
+        }
     }
 
     /*-------------------------------- Video extractors ------------------------------------*/
