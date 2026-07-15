@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
+import eu.kanade.tachiyomi.animeextension.es.pelisjuanita.extractors.ByseExtractor
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilter
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
@@ -22,9 +23,12 @@ import eu.kanade.tachiyomi.lib.streamtapeextractor.StreamTapeExtractor
 import eu.kanade.tachiyomi.lib.streamwishextractor.StreamWishExtractor
 import eu.kanade.tachiyomi.lib.uqloadextractor.UqloadExtractor
 import eu.kanade.tachiyomi.lib.vidguardextractor.VidGuardExtractor
+import eu.kanade.tachiyomi.lib.vidhideextractor.VidHideExtractor
 import eu.kanade.tachiyomi.lib.voeextractor.VoeExtractor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Cookie
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -46,11 +50,142 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override val supportsLatest = true
 
-    override val client: OkHttpClient by lazy {
-        val baseClient = super.client.newBuilder().build()
-        baseClient.newBuilder()
-            .addInterceptor(CloudflareInterceptor(baseClient))
+    // ========================== Browser-like Headers ==========================
+
+    /** Headers base with the same Android WebView fingerprint that solves Cloudflare. */
+    private val browserHeaders: Headers by lazy {
+        headers.newBuilder()
+            .set("User-Agent", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36")
+            .set("Accept-Language", "es-US,es;q=0.9,en-US;q=0.8,en;q=0.7")
             .build()
+    }
+
+    /** Headers para requests de navegación HTML (home, detalle, listados) */
+    private fun navHeaders(referer: String = "$baseUrl/"): Headers {
+        return browserHeaders.newBuilder()
+            .set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
+            .set("sec-fetch-site", "same-origin")
+            .set("sec-fetch-mode", "navigate")
+            .set("sec-fetch-dest", "document")
+            .set("Referer", referer)
+            .set("Upgrade-Insecure-Requests", "1")
+            .build()
+    }
+
+    /** Headers para endpoints AJAX (serieInfo.php, movieInfo.php, apiSeries.php, etc.) */
+    private fun ajaxHeaders(referer: String): Headers {
+        return browserHeaders.newBuilder()
+            .set("Accept", "*/*")
+            .set("sec-fetch-site", "same-origin")
+            .set("sec-fetch-mode", "cors")
+            .set("sec-fetch-dest", "empty")
+            .set("Referer", referer)
+            .build()
+    }
+
+    // ========================== Client with CF interceptor ==========================
+
+    private val cfInterceptor by lazy { CloudflareInterceptor(super.client.newBuilder().build()) }
+
+    override val client: OkHttpClient by lazy {
+        super.client.newBuilder()
+            .addInterceptor(CfMitigatedInterceptor(cfInterceptor, this))
+            .build()
+    }
+
+    /**
+     * Resuelve el challenge de Cloudflare cargando baseUrl en WebView.
+     * Sincroniza las cookies (cf_clearance, PHPSESSID) del WebView al cookieJar de OkHttp
+     * con el scheme HTTPS correcto.
+     *
+     * CloudflareInterceptor.resolveWithWebView guarda cookies con scheme http (bug),
+     * por lo que hacemos nuestra propia sincronización después.
+     */
+    fun solveCloudflare(request: Request): Boolean {
+        return try {
+            Log.d("PelisJuanita", "solveCloudflare: loading $baseUrl in WebView...")
+            val warmRequest = okhttp3.Request.Builder()
+                .url("$baseUrl/")
+                .headers(browserHeaders)
+                .build()
+
+            // resolveWithWebView carga la URL en WebView, espera a que CF pase,
+            // y devuelve un Request con cookies en el header
+            val resolved = cfInterceptor.resolveWithWebView(warmRequest, client)
+
+            // Además, sincronizar cookies del CookieManager de WebView al cookieJar de OkHttp
+            // con el scheme HTTPS correcto (CloudflareInterceptor usa http, que es un bug)
+            val cookieManager = android.webkit.CookieManager.getInstance()
+            val cookieStr = cookieManager?.getCookie("$baseUrl/") ?: ""
+            Log.d("PelisJuanita", "solveCloudflare: WebView cookies present = ${cookieStr.isNotBlank()}")
+
+            if (cookieStr.isNotBlank()) {
+                val pelisUrl = okhttp3.HttpUrl.Builder()
+                    .scheme("https")
+                    .host("pelisjuanita.com")
+                    .build()
+                val cookies = cookieStr.split(";")
+                    .mapNotNull { Cookie.parse(pelisUrl, it.trim()) }
+
+                // Guardar cookies con scheme HTTPS correcto
+                cookies.forEach { cookie ->
+                    client.cookieJar.saveFromResponse(
+                        url = pelisUrl,
+                        cookies = cookies,
+                    )
+                }
+                Log.d("PelisJuanita", "solveCloudflare: saved ${cookies.size} cookies to jar with HTTPS")
+            }
+
+            true
+        } catch (e: Exception) {
+            Log.e("PelisJuanita", "solveCloudflare FAILED: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Interceptor que detecta 403 con cf-mitigated y resuelve CF automáticamente.
+     * Sincroniza cookies del WebView al cookieJar con scheme HTTPS y reintenta.
+     */
+    private class CfMitigatedInterceptor(
+        private val cfInterceptor: CloudflareInterceptor,
+        private val source: PelisJuanita,
+    ) : okhttp3.Interceptor {
+        @Volatile
+        private var warmed = false
+
+        override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response {
+            val request = chain.request()
+
+            // Pre-warm una sola vez
+            if (!warmed) {
+                warmed = true
+                source.solveCloudflare(request)
+            }
+
+            val response = chain.proceed(request)
+
+            if (response.code != 403 || response.header("cf-mitigated") == null) {
+                return response
+            }
+
+            Log.d("PelisJuanita", "cf-mitigated challenge detected on ${request.url}")
+            response.close()
+
+            // Resolver CF y sincronizar cookies
+            val solved = source.solveCloudflare(request)
+            if (!solved) {
+                Log.e("PelisJuanita", "cf-mitigated: could not resolve, returning original")
+                return chain.proceed(request)
+            }
+
+            // Reintentar el request original (las cookies ya están en el cookieJar)
+            Log.d("PelisJuanita", "cf-mitigated: retrying original request with jar cookies")
+            val retryResponse = chain.proceed(request)
+            Log.d("PelisJuanita", "cf-mitigated retry result: ${retryResponse.code}")
+            return retryResponse
+        }
     }
 
     private val preferences: SharedPreferences by lazy {
@@ -71,37 +206,46 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
         private val SERVER_LIST = arrayOf(
             "Voe", "StreamWish", "Doodstream", "Filemoon",
             "Okru", "StreamTape", "Mp4Upload", "Uqload", "VidGuard",
+            "Earnvids", "Byse",
         )
     }
 
     // ========================== Popular (Películas) ==========================
 
     override fun popularAnimeRequest(page: Int): Request {
-        return GET("$baseUrl/movies/movies.php?estrenos=$page", headers)
+        Log.d("PelisJuanita", "popularAnimeRequest: page=$page")
+        return GET("$baseUrl/movies/movies.php?estrenos=$page", ajaxHeaders("$baseUrl/movies/"))
     }
 
     override fun popularAnimeParse(response: Response): AnimesPage {
+        Log.d("PelisJuanita", "popularAnimeParse: code=${response.code}, url=${response.request.url}")
         return parseGridItems(response)
     }
 
     // ========================== Últimas Novedades (Series) ==========================
 
     override fun latestUpdatesRequest(page: Int): Request {
-        return GET("$baseUrl/series/apiSeries.php?=$page", headers)
+        Log.d("PelisJuanita", "latestUpdatesRequest: page=$page")
+        return GET("$baseUrl/series/apiSeries.php?=$page", ajaxHeaders("$baseUrl/series/"))
     }
 
     override fun latestUpdatesParse(response: Response): AnimesPage {
+        Log.d("PelisJuanita", "latestUpdatesParse: code=${response.code}, url=${response.request.url}")
         return parseGridItems(response)
     }
 
     // ========================== Parsing común de listados ==========================
 
     private fun parseGridItems(response: Response): AnimesPage {
+        Log.d("PelisJuanita", "parseGridItems: code=${response.code}, url=${response.request.url}")
         val document = response.asJsoup()
         val requestUrl = response.request.url.toString()
-        val items = document.select("div.grid-item")
+        val items = document.select("div.grid-item, .item-tira, a.fav-item, .cartelera-item")
         val animeList = items.mapNotNull { element ->
-            val link = element.selectFirst("a") ?: return@mapNotNull null
+            val link = if (element.`is`("a[href]")) {
+                element
+            } else element.selectFirst("a[href]")
+                ?: return@mapNotNull null
             var href = link.attr("href")
             if (href.isBlank()) return@mapNotNull null
 
@@ -120,18 +264,27 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
 
             SAnime.create().apply {
                 setUrlWithoutDomain(href)
-                title = element.selectFirst("h2")?.text() ?: ""
-                thumbnail_url = element.selectFirst("img.img-cover")?.attr("src")
+                title = element.selectFirst("h2, .texto-tira, h1")?.text()
+                    ?: element.attr("aria-label").takeIf { it.isNotBlank() }
+                        ?.removePrefix("Ver película ")
+                        ?.removePrefix("Ver serie ")
+                        ?.substringBefore(" (Película)")
+                        ?.substringBefore(" (Serie)")
+                    ?: element.selectFirst("img[alt]")?.attr("alt")
+                    ?: ""
+                thumbnail_url = element.selectFirst("img.img-cover, img.img-tira, img.cartelera-bg, img.fav-img-tapa, img[src]")?.attr("abs:src")
             }
-        }
+        }.distinctBy { it.url }
+        Log.d("PelisJuanita", "parseGridItems: found ${animeList.size} items")
         return AnimesPage(animeList, false)
     }
 
     // ========================== Búsqueda ==========================
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
+        Log.d("PelisJuanita", "searchAnimeRequest: query=$query, page=$page")
         if (query.isNotBlank()) {
-            return GET("$baseUrl/series/apiSeries.php?s=$query", headers)
+            return GET("$baseUrl/series/apiSeries.php?s=$query", ajaxHeaders("$baseUrl/series/"))
         }
 
         val contentType = (filters.find { it is ContentTypeFilter } as? ContentTypeFilter)?.toUriPart() ?: "movies"
@@ -151,16 +304,18 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
             studio.isNotBlank() -> "$basePath/productora/$studio"
             else -> if (contentType == "series") "$baseUrl/series/apiSeries.php?=$page" else "$baseUrl/movies/movies.php?estrenos=$page"
         }
-        return GET(url, headers)
+        return GET(url, navHeaders("$basePath/"))
     }
 
     override fun searchAnimeParse(response: Response): AnimesPage {
+        Log.d("PelisJuanita", "searchAnimeParse: code=${response.code}, url=${response.request.url}")
         return parseGridItems(response)
     }
 
     // ========================== Detalles ==========================
 
     override fun animeDetailsParse(response: Response): SAnime {
+        Log.d("PelisJuanita", "animeDetailsParse: code=${response.code}, url=${response.request.url}")
         val document = response.asJsoup()
         val url = response.request.url.toString()
         Log.d("PelisJuanita", "animeDetailsParse called with URL: $url")
@@ -197,6 +352,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
     // ========================== Episodios ==========================
 
     override fun episodeListParse(response: Response): List<SEpisode> {
+        Log.d("PelisJuanita", "episodeListParse: code=${response.code}, url=${response.request.url}")
         val document = response.asJsoup()
         val url = response.request.url.toString()
         Log.d("PelisJuanita", "episodeListParse called with URL: $url")
@@ -212,8 +368,9 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
 
             // 1. Petición inicial a serieInfo.php sin parámetros de temporada para obtener el dropdown y temporada por defecto
             val firstUrl = "$baseUrl/series/serieInfo.php?nombreSerie=$slug"
+            val refererUrl = "$baseUrl/series/ver-serie/$slug"
             Log.d("PelisJuanita", "episodeListParse fetching initial: $firstUrl")
-            val firstResponse = client.newCall(GET(firstUrl, headers)).execute()
+            val firstResponse = client.newCall(GET(firstUrl, ajaxHeaders(refererUrl))).execute()
             if (!firstResponse.isSuccessful) throw Exception("Error al obtener serieInfo: ${firstResponse.code}")
             val firstDoc = firstResponse.asJsoup()
 
@@ -242,7 +399,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
                 val seasonUrl = "$baseUrl/series/serieInfo.php?nombreSerie=$slug&temporada=$seasonNum&snum=$seasonNum&enum=1"
                 Log.d("PelisJuanita", "episodeListParse fetching other seasonUrl: $seasonUrl")
                 val seasonResponse = runCatching {
-                    client.newCall(GET(seasonUrl, headers)).execute()
+                    client.newCall(GET(seasonUrl, ajaxHeaders(refererUrl))).execute()
                 }.getOrNull()
 
                 if (seasonResponse != null && seasonResponse.isSuccessful) {
@@ -340,6 +497,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
     // ========================== Videos ==========================
 
     override fun videoListRequest(episode: SEpisode): Request {
+        Log.d("PelisJuanita", "videoListRequest: episode=${episode.url}")
         val url = episode.url
         return when {
             url.contains("/ver-serie/") -> {
@@ -350,12 +508,18 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
                 val epMatch = Regex("""(\d+)x(\d+)""").find(epString)
                 val season = epMatch?.groupValues?.get(1)?.toIntOrNull() ?: 1
                 val episodeNum = epMatch?.groupValues?.get(2)?.toIntOrNull() ?: 1
-                GET("$baseUrl/series/serieInfo.php?nombreSerie=$slug&nroTemporada=$season&nroEpisodio=$episodeNum", headers)
+                GET(
+                    "$baseUrl/series/serieInfo.php?nombreSerie=$slug&nroTemporada=$season&nroEpisodio=$episodeNum",
+                    ajaxHeaders("$baseUrl/series/ver-serie/$slug"),
+                )
             }
             url.contains("/pelicula/") -> {
                 // Formato: /movies/pelicula/slug
                 val slug = url.substringAfter("/pelicula/").substringBefore("/")
-                GET("$baseUrl/movies/movieInfo.php?title=$slug", headers)
+                GET(
+                    "$baseUrl/movies/movieInfo.php?title=$slug",
+                    ajaxHeaders("$baseUrl/movies/pelicula/$slug"),
+                )
             }
             else -> super.videoListRequest(episode)
         }
@@ -391,12 +555,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
                     }
                 if (streamUrl.isBlank() || !streamUrl.startsWith("http")) return@forEach
 
-                val langPrefix = when (val idioma = row.attr("data-idioma").lowercase()) {
-                    "latino" -> "[LAT]"
-                    "castellano", "español", "espanol" -> "[CAST]"
-                    "subtitulada", "sub" -> "[SUB]"
-                    else -> activeLang
-                }
+                val langPrefix = parseLanguage(row.attr("data-idioma"), row.text(), activeLang)
 
                 Log.d("PelisJuanita", "videoListParse row-download streamUrl: $streamUrl, prefix: $langPrefix")
                 videos.addAll(serverVideoResolver(streamUrl, langPrefix, url))
@@ -419,12 +578,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
             document.select("a[href*='player'], a[href*='embed'], .server-item a, iframe[data-src]").forEach { server ->
                 val serverUrl = server.attr("href").ifEmpty { server.attr("data-src") }
                 if (serverUrl.isNotBlank() && serverUrl.startsWith("http") && serverUrl != iframeSrc) {
-                    val prefix = when {
-                        server.text().contains("Latino", true) -> "[LAT]"
-                        server.text().contains("Español", true) || server.text().contains("Castellano", true) -> "[CAST]"
-                        server.text().contains("Sub", true) -> "[SUB]"
-                        else -> activeLang
-                    }
+                    val prefix = parseLanguage(server.text(), fallback = activeLang)
                     Log.d("PelisJuanita", "videoListParse alternate serverUrl: $serverUrl, prefix: $prefix")
                     videos.addAll(extractFromServer(serverUrl, prefix))
                 }
@@ -453,12 +607,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
                 val key = match.groupValues[1]
                 val url = match.groupValues[2]
 
-                val langPrefix = when {
-                    key.contains("lat", ignoreCase = true) -> "[LAT]"
-                    key.contains("cast", ignoreCase = true) || key.contains("espa", ignoreCase = true) -> "[CAST]"
-                    key.contains("sub", ignoreCase = true) -> "[SUB]"
-                    else -> "[LAT]"
-                }
+                val langPrefix = parseLanguage(key)
 
                 val serverName = when {
                     "voe" in url.lowercase() -> "Voe"
@@ -470,7 +619,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
                     "mp4upload" in url.lowercase() -> "Mp4Upload"
                     "uqload" in url.lowercase() -> "Uqload"
                     "vidguard" in url.lowercase() || "guard" in url.lowercase() -> "VidGuard"
-                    "earnvids" in url.lowercase() -> "Earnvids"
+                    "earnvids" in url.lowercase() || "callistanise" in url.lowercase() || "ryderjet" in url.lowercase() -> "Earnvids"
                     "byse" in url.lowercase() -> "Byse"
                     "embed69" in url.lowercase() -> "Embed69"
                     else -> key
@@ -509,12 +658,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
         doc.select("a[href*='getvideo'], a[href*='embed'], a.server-link, .server-item a").forEach { element ->
             val href = element.attr("href")
             if (href.isNotBlank() && href.startsWith("http")) {
-                val langPrefix = when {
-                    element.text().contains("Latino", true) -> "[LAT]"
-                    element.text().contains("Español", true) || element.text().contains("Castellano", true) -> "[CAST]"
-                    element.text().contains("Sub", true) -> "[SUB]"
-                    else -> "[LAT]"
-                }
+                val langPrefix = parseLanguage(element.text())
                 Log.d("PelisJuanita", "extractServersFromJs HTML server: ${element.text()}, url: $href")
                 videos.addAll(serverVideoResolver(href, langPrefix, referer))
             }
@@ -525,20 +669,33 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
 
     private fun parseLangFromOnclick(onclick: String): String {
         val lang = Regex("""filtrarServidor\(['\"]([^'\"]+)['\"]""").find(onclick)?.groupValues?.get(1) ?: "latino"
+        return parseLanguage(lang)
+    }
+
+    private fun parseLanguage(vararg values: String, fallback: String = "[LAT]"): String {
+        val normalized = values
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+            .lowercase()
+            .replace('á', 'a')
+            .replace('é', 'e')
+            .replace('í', 'i')
+            .replace('ó', 'o')
+            .replace('ú', 'u')
+
+        if (normalized.isBlank()) return fallback
+
         return when {
-            lang.contains("latino", true) -> "[LAT]"
-            lang.contains("castellano", true) || lang.contains("espanol", true) || lang.contains("español", true) -> "[CAST]"
-            lang.contains("sub", true) -> "[SUB]"
-            else -> "[LAT]"
+            listOf("sub", "subtitulado", "subtitulada", "subtitulos", "vose", "vost").any { it in normalized } -> "[SUB]"
+            listOf("cast", "castellano", "espanol", "español", "esp", "espana", "españa").any { it in normalized } -> "[CAST]"
+            listOf("lat", "latino", "latina", "latin", "mx", "mex", "mexico", "mexicano").any { it in normalized } -> "[LAT]"
+            else -> fallback
         }
     }
 
     private fun extractFromPlayerPage(playerUrl: String, defaultPrefix: String): List<Video> {
         return runCatching {
-            val playerHeaders = headers.newBuilder()
-                .add("Referer", baseUrl)
-                .build()
-            val playerDoc = client.newCall(GET(playerUrl, playerHeaders)).execute().asJsoup()
+            val playerDoc = client.newCall(GET(playerUrl, navHeaders(baseUrl))).execute().asJsoup()
             val videos = mutableListOf<Video>()
 
             // Servidores de streaming: <div class="row-download" data-idioma="latino" data-tipo="stream" data-url="...">
@@ -551,12 +708,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
                     }
                 if (streamUrl.isBlank() || !streamUrl.startsWith("http")) return@forEach
 
-                val langPrefix = when (val idioma = row.attr("data-idioma").lowercase()) {
-                    "latino" -> "[LAT]"
-                    "castellano", "español", "espanol" -> "[CAST]"
-                    "subtitulada", "sub" -> "[SUB]"
-                    else -> defaultPrefix
-                }
+                val langPrefix = parseLanguage(row.attr("data-idioma"), row.text(), fallback = defaultPrefix)
 
                 videos.addAll(serverVideoResolver(streamUrl, langPrefix, playerUrl))
             }
@@ -567,7 +719,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
 
     private fun extractFromServer(url: String, prefix: String): List<Video> {
         return runCatching {
-            val response = client.newCall(GET(url, headers)).execute().asJsoup()
+            val response = client.newCall(GET(url, navHeaders(baseUrl))).execute().asJsoup()
             val iframe = response.selectFirst("iframe")
             val src = iframe?.attr("src")?.ifEmpty { iframe.attr("data-src") } ?: return@runCatching emptyList()
             serverVideoResolver(src, prefix, url)
@@ -584,6 +736,7 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
     private val streamTapeExtractor by lazy { StreamTapeExtractor(client) }
     private val streamWishExtractor by lazy { StreamWishExtractor(client, headers) }
     private val vidGuardExtractor by lazy { VidGuardExtractor(client) }
+    private val byseExtractor by lazy { ByseExtractor(client, headers, baseUrl) }
 
     private fun serverVideoResolver(url: String, prefix: String = "", referer: String): List<Video> {
         return runCatching {
@@ -599,6 +752,8 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
                 "doodstream" -> doodExtractor.videosFromUrl(url, "$prefix DoodStream")
                 "streamtape" -> streamTapeExtractor.videosFromUrl(url, quality = "$prefix StreamTape")
                 "vidguard" -> vidGuardExtractor.videosFromUrl(url, prefix = "$prefix ")
+                "vidhide" -> VidHideExtractor(client, newHeaders).videosFromUrl(url) { "$prefix Earnvids:$it" }
+                "byse" -> byseExtractor.videosFromUrl(url, prefix)
                 else -> emptyList()
             }
         }.getOrNull() ?: emptyList()
@@ -610,11 +765,13 @@ class PelisJuanita : ConfigurableAnimeSource, AnimeHttpSource() {
         "filemoon" to listOf("filemoon", "moonplayer", "moviesm4u", "files.im"),
         "uqload" to listOf("uqload"),
         "mp4upload" to listOf("mp4upload"),
-        "streamwish" to listOf("wishembed", "streamwish", "strwish", "wish", "Kswplayer", "Swhoi", "Multimovies", "Uqloads", "neko-stream", "swdyu", "iplayerhls", "streamgg"),
+        "streamwish" to listOf("wishembed", "streamwish", "strwish", "wish", "ghbrisk", "Kswplayer", "Swhoi", "Multimovies", "Uqloads", "neko-stream", "swdyu", "iplayerhls", "streamgg"),
         "waaw" to listOf("waaw", "netu", "hqq"),
         "doodstream" to listOf("doodstream", "dood.", "ds2play", "doods.", "ds2play", "ds2video", "dooood", "d000d", "d0000d"),
         "streamtape" to listOf("streamtape", "stp", "stape", "shavetape"),
         "vidguard" to listOf("vembed", "guard", "listeamed", "bembed", "vgfplay", "bembed"),
+        "vidhide" to listOf("vidhide", "streamhide", "earnvids", "callistanise", "ryderjet"),
+        "byse" to listOf("byse", "bysesukior"),
     )
 
     private fun fetchUrls(text: String?): List<String> {
