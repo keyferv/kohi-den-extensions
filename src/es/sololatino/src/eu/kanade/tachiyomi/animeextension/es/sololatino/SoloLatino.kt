@@ -1,40 +1,24 @@
 package eu.kanade.tachiyomi.animeextension.es.sololatino
 
-import android.util.Base64
-import android.util.Log
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.lib.cryptoaes.CryptoAES
-import eu.kanade.tachiyomi.lib.doodextractor.DoodExtractor
-import eu.kanade.tachiyomi.lib.filemoonextractor.FilemoonExtractor
-import eu.kanade.tachiyomi.lib.streamhidevidextractor.StreamHideVidExtractor
-import eu.kanade.tachiyomi.lib.streamwishextractor.StreamWishExtractor
-import eu.kanade.tachiyomi.lib.uqloadextractor.UqloadExtractor
-import eu.kanade.tachiyomi.lib.vidguardextractor.VidGuardExtractor
-import eu.kanade.tachiyomi.lib.voeextractor.VoeExtractor
 import eu.kanade.tachiyomi.multisrc.dooplay.DooPlay
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.util.asJsoup
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.FormBody
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URLDecoder
+import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -43,73 +27,85 @@ class SoloLatino : DooPlay(
     "SoloLatino",
     "https://sololatino.net",
 ) {
-    private val json by lazy { Json { ignoreUnknownKeys = true } }
+
+    override fun headersBuilder() = super.headersBuilder()
+        .set("User-Agent", USER_AGENT)
+        .set("Accept-Language", "es-419,es;q=0.9,en;q=0.8")
+
+    override val fetchGenres = false
+
+    override fun getFilterList() = SoloLatinoFilters.FILTER_LIST
 
     // ============================== Popular ===============================
-    override fun popularAnimeRequest(page: Int) = GET("$baseUrl/tendencias/page/$page")
+    override fun popularAnimeRequest(page: Int) = GET("$baseUrl/peliculas?page=$page", headers)
 
-    override fun popularAnimeSelector() = "article.item"
+    override fun popularAnimeSelector() = CARD_SELECTOR
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/pelicula/estrenos/page/$page", headers)
+    override fun popularAnimeFromElement(element: Element): SAnime = animeFromCard(element)
+
+    override fun popularAnimeNextPageSelector(): String = "a[href*='page=']"
+
+    // =============================== Latest ===============================
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/series?page=$page", headers)
 
     override fun latestUpdatesNextPageSelector() = popularAnimeNextPageSelector()
 
     override fun latestUpdatesSelector() = popularAnimeSelector()
 
-    override fun popularAnimeFromElement(element: Element): SAnime = SAnime.create().apply {
-        val img = element.selectFirst("img")
-        val url = element.selectFirst("a")?.attr("href") ?: element.attr("href")
-        setUrlWithoutDomain(url)
-        title = img?.attr("alt") ?: "Serie/Película"
-        thumbnail_url = img?.attr("data-srcset")
+    override fun latestUpdatesFromElement(element: Element): SAnime = animeFromCard(element)
+
+    private fun animeFromCard(element: Element): SAnime = SAnime.create().apply {
+        val img = element.selectFirst("img.card__poster, img[src]")
+        val titleElement = element.selectFirst(".card__title")
+        setUrlWithoutDomain(element.attr("abs:href"))
+        title = titleElement?.text()?.trim()
+            ?: img?.attr("alt")?.trim()
+            ?: "Serie/Película"
+        thumbnail_url = img?.getImageUrl()
     }
 
-    override fun popularAnimeNextPageSelector(): String = "div.pagMovidy a"
-
+    // ============================== Episodes ==============================
     override fun episodeListParse(response: Response): List<SEpisode> {
         val doc = response.asJsoup()
-        val seasonList = doc.select("div#seasons div.se-c")
-        return if (seasonList.isEmpty()) {
-            SEpisode.create().apply {
-                setUrlWithoutDomain(doc.location())
-                episode_number = 1F
-                name = episodeMovieText
-                date_upload = doc.selectFirst("span.date")?.text()?.toDate() ?: 0L
-            }.let(::listOf)
+        val episodes = doc.select("a.ep-item[href*=/temporada-][href*=/episodio-]")
+            .mapNotNull(::episodeFromElementSafe)
+
+        return if (episodes.isEmpty()) {
+            listOf(
+                SEpisode.create().apply {
+                    setUrlWithoutDomain(doc.location())
+                    episode_number = 1F
+                    name = episodeMovieText
+                    date_upload = doc.selectFirst("main span")?.text()?.toDate() ?: 0L
+                },
+            )
         } else {
-            seasonList.flatMap(::getSeasonEpisodes).reversed()
+            episodes.reversed()
         }
     }
 
-    override fun getSeasonEpisodes(season: Element): List<SEpisode> {
-        val seasonName = season.attr("data-season")
-        return season.select("ul.episodios li").mapNotNull { element ->
-            runCatching {
-                episodeFromElement(element, seasonName)
-            }.getOrNull()
-        }
-    }
+    private fun episodeFromElementSafe(element: Element): SEpisode? {
+        val href = element.attr("abs:href").takeIf(String::isNotBlank) ?: return null
+        val season = SEASON_EPISODE_REGEX.find(href)?.groupValues?.get(1) ?: "0"
+        val episode = SEASON_EPISODE_REGEX.find(href)?.groupValues?.get(2) ?: "0"
+        val title = element.selectFirst("p.text-sm.font-semibold")?.text()?.trim()
+            ?: element.selectFirst(".ep-num")?.text()?.trim()
+            ?: "Episodio $episode"
 
-    override fun episodeFromElement(element: Element): SEpisode = throw UnsupportedOperationException()
-
-    override fun episodeFromElement(element: Element, seasonName: String): SEpisode {
         return SEpisode.create().apply {
-            val epNum = element.selectFirst("div.numerando")?.text()
-                ?.trim()
-                ?.let { episodeNumberRegex.find(it)?.groupValues?.last() } ?: "0"
-
-            val href = element.selectFirst("a[href]")?.attr("href") ?: ""
-            val episodeName = element.selectFirst("div.epst")?.text() ?: "Sin título"
-
-            episode_number = epNum.toFloatOrNull() ?: 0F
-            date_upload = element.selectFirst("span.date")?.text()?.toDate() ?: 0L
-
-            name = "T$seasonName - Episodio $epNum: $episodeName"
             setUrlWithoutDomain(href)
+            episode_number = episode.toFloatOrNull() ?: 0F
+            name = "T$season - Episodio $episode: $title"
+            date_upload = element.select("p.text-xs")
+                .asSequence()
+                .map { it.text().trim() }
+                .firstOrNull { DATE_SLASH_REGEX.matches(it) }
+                ?.toDate() ?: 0L
         }
     }
 
-    override fun videoListSelector() = "li.dooplay_player_option"
+    override fun episodeFromElement(element: Element): SEpisode = episodeFromElementSafe(element)
+        ?: throw IllegalArgumentException("Invalid episode element")
 
     override val episodeMovieText = "Película"
 
@@ -117,440 +113,204 @@ class SoloLatino : DooPlay(
     override val prefQualityTitle = "Calidad preferida"
 
     // ============================ Video Links =============================
+    override fun videoListSelector() = "[data-player-token]"
+
     override fun videoListParse(response: Response): List<Video> {
-        val path = response.request.url.toString()
-        val links = mutableListOf<Pair<String, String>>()
+        val document = response.asJsoup()
+        val referer = response.request.url.toString()
+        val tokens = document.select(videoListSelector())
+            .map { it.attr("data-player-token") }
+            .filter(String::isNotBlank)
+            .distinct()
 
-        runBlocking {
-            getLinks({ videoLinks -> links.addAll(videoLinks) }, { error ->
-                println("Error al obtener los enlaces: $error")
-            }, path)
-        }
-
-        if (links.isEmpty()) {
-            return emptyList()
-        }
-
-        return links.filter { it.first.isNotBlank() }.flatMap { (link, languageCode) ->
-            extractVideosSafely(link, languageCode)
-        }
-    }
-
-    private fun extractVideosSafely(link: String, languageCode: String): List<Video> {
-        return runCatching {
-            extractVideos(link, languageCode).sort()
-        }.getOrDefault(emptyList())
-    }
-
-    private suspend fun getLinks(after: (List<Pair<String, String>>) -> Unit, onError: (Throwable) -> Unit, path: String) {
-        try {
-            val result = httpGet(path)
-            val links = mutableListOf<Pair<String, String>>()
-
-            val linkPages = Regex("""data-type=["'](.+?)["'] data-post=["'](.+?)["'] data-nume=["'](.+?)["']""")
-                .findAll(result)
-                .toList()
-
-            coroutineScope {
-                val deferredResults = linkPages.map { matchResult ->
-                    async {
-                        processLinkPage(matchResult, path)
-                    }
-                }
-                deferredResults.awaitAll().forEach { newLinks ->
-                    links.addAll(newLinks)
-                }
-            }
-
-            if (links.isEmpty()) {
-                handleEmptyLinks(result, links, path)
-            }
-
-            after(links)
-        } catch (error: Throwable) {
-            onError(error)
-        }
-    }
-
-    private fun processLinkPage(matchResult: MatchResult, path: String): List<Pair<String, String>> {
-        return try {
-            val postParams = mapOf(
-                "action" to "doo_player_ajax",
-                "post" to (matchResult.groups[2]?.value ?: ""),
-                "nume" to (matchResult.groups[3]?.value ?: ""),
-                "type" to (matchResult.groups[1]?.value ?: ""),
-            )
-            val presp = httpPost("$baseUrl/wp-admin/admin-ajax.php", postParams, path)
-            val iframeUrl = getFirstMatch("""<iframe[^>]+src=['"]([^'"]+)""".toRegex(), presp)
-            val bData = httpGet(iframeUrl, path)
-
-            parseLinks(bData)
-        } catch (_: Exception) {
-            emptyList()
-        }
-    }
-
-    private fun handleEmptyLinks(result: String, links: MutableList<Pair<String, String>>, referer: String) {
-        val iframeUrl = Regex("""pframe"><iframe class="[^"]+" src="([^"]+)""").find(result)?.groups?.get(1)?.value
-        iframeUrl?.let { web ->
-            val newResult = httpGet(web, referer)
-            links.addAll(parseLinks(newResult))
-
-            if (links.isEmpty() && web.contains("xyz")) {
-                links.add(Pair(web, "unknown"))
-            }
-        }
-    }
-
-    private fun httpGet(url: String, referer: String? = null): String {
-        val headers = headersBuilder().apply {
-            referer?.let { set("Referer", it) }
-        }.build()
-
-        val request = GET(url, headers)
-        return client.newCall(request).execute().use { response ->
-            response.body.string()
-        }
-    }
-
-    private fun httpPost(url: String, params: Map<String, String>, referer: String): String {
-        val formBody = FormBody.Builder().apply {
-            params.forEach { (key, value) -> add(key, value) }
-        }.build()
-
-        val headers = headersBuilder().apply {
-            set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-            set("X-Requested-With", "XMLHttpRequest")
-            set("Referer", referer)
-        }.build()
-
-        val request = Request.Builder()
-            .url(url)
-            .headers(headers)
-            .post(formBody)
-            .build()
-
-        return client.newCall(request).execute().use { response ->
-            response.body.string()
-        }
-    }
-
-    private val uqloadExtractor by lazy { UqloadExtractor(client) }
-    private val streamWishExtractor by lazy { StreamWishExtractor(client, headers) }
-    private val vidGuardExtractor by lazy { VidGuardExtractor(client) }
-    private val doodExtractor by lazy { DoodExtractor(client) }
-    private val streamHideVidExtractor by lazy { StreamHideVidExtractor(client, headers) }
-    private val voeExtractor by lazy { VoeExtractor(client, headers) }
-    private val filemoonExtractor by lazy { FilemoonExtractor(client) }
-
-    private fun extractVideos(url: String, lang: String): List<Video> {
-        val prefix = if (lang == "unknown") "[UNK]" else lang
-        return try {
-            val matched = conventions.firstOrNull { (_, names) -> names.any { it.lowercase() in url.lowercase() } }?.first
-            when (matched) {
-                "streamwish" -> streamWishExtractor.videosFromUrl(url, videoNameGen = { "$prefix StreamWish:$it" })
-                "uqload" -> uqloadExtractor.videosFromUrl(url, prefix)
-                "vidguard" -> vidGuardExtractor.videosFromUrl(url, "$prefix ")
-                "doodstream" -> doodExtractor.videosFromUrl(url, "$prefix ")
-                "voe" -> voeExtractor.videosFromUrl(url, "$prefix ")
-                "filemoon" -> filemoonExtractor.videosFromUrl(url, prefix = "$prefix Filemoon:")
-                "vidhide" -> streamHideVidExtractor.videosFromUrl(url, videoNameGen = { "$prefix - VidHide:$it" })
+        return tokens.flatMap { token ->
+            val playerUrl = resolvePlayerUrl(token, referer) ?: return@flatMap emptyList()
+            when {
+                PLAYER_HOST in playerUrl -> extractPelisSeriesHoyVideos(playerUrl)
+                playerUrl.isDirectVideoUrl() -> listOf(newVideo(playerUrl, "SoloLatino", referer))
                 else -> emptyList()
             }
-        } catch (e: Exception) {
-            emptyList()
-        }
+        }.sort()
     }
 
-    private val conventions = listOf(
-        "streamwish" to listOf("wishembed", "streamwish", "strwish", "wish", "Kswplayer", "Swhoi", "Multimovies", "Uqloads", "neko-stream", "swdyu", "iplayerhls", "streamgg"),
-        "uqload" to listOf("uqload"),
-        "vidguard" to listOf("vembed", "guard", "listeamed", "bembed", "vgfplay", "bembed"),
-        "doodstream" to listOf("doodstream", "dood.", "ds2play", "doods.", "ds2play", "ds2video", "dooood", "d000d", "d0000d"),
-        "voe" to listOf("voe", "tubelessceliolymph", "simpulumlamerop", "urochsunloath", "nathanfromsubject", "yip.", "metagnathtuggers", "donaldlineelse"),
-        "filemoon" to listOf("filemoon", "moonplayer", "moviesm4u", "files.im"),
-        "vidhide" to listOf("ahvsh", "streamhide", "guccihide", "streamvid", "vidhide", "kinoger", "smoothpre", "dhtpre", "peytonepre", "earnvids", "ryderjet"),
-    )
+    private fun resolvePlayerUrl(token: String, referer: String): String? {
+        fetchXsrfCookie(referer)
+        val xsrfToken = client.cookieJar.loadForRequest(baseUrl.toHttpUrl())
+            .firstOrNull { it.name == "XSRF-TOKEN" }
+            ?.value
+            ?.let { URLDecoder.decode(it, "UTF-8") }
 
-    private fun getFirstMatch(regex: Regex, input: String): String {
-        return regex.find(input)?.groupValues?.get(1) ?: ""
-    }
-
-    private fun parseLinks(htmlContent: String): List<Pair<String, String>> {
-        val links = mutableListOf<Pair<String, String>>()
-        val doc: Document = Jsoup.parse(htmlContent)
-
-        extractNewExtractorLinks(doc, htmlContent)?.let { newLinks ->
-            newLinks.forEach { links.add(it) }
-        }
-        extractOldExtractorLinks(doc)?.let { oldLinks ->
-            oldLinks.forEach { links.add(Pair(it, "unknown")) }
-        }
-
-        return links
-    }
-
-    private fun resolveDataLink(rawExpression: String?): String? {
-        if (rawExpression.isNullOrBlank()) return null
-
-        var expr = rawExpression.trim().trimEnd(';')
-
-        fun String.removeOuterCall(prefix: String): String? {
-            if (!this.startsWith(prefix, ignoreCase = true) || !this.endsWith(')')) return null
-            val start = indexOf('(')
-            val end = lastIndexOf(')')
-            if (start == -1 || end == -1 || end <= start) return null
-            return substring(start + 1, end).trim()
-        }
-
-        fun String.trimMatchingQuotes(): String {
-            return if ((startsWith('"') && endsWith('"')) || (startsWith('\'') && endsWith('\''))) {
-                substring(1, length - 1)
-            } else {
-                this
+        val body = "{\"t\":\"$token\"}".toRequestBody(JSON_MEDIA_TYPE)
+        val apiHeaders = headersBuilder()
+            .set("Accept", "application/json")
+            .set("Content-Type", "application/json")
+            .set("X-Requested-With", "XMLHttpRequest")
+            .set("Referer", referer)
+            .apply {
+                if (!xsrfToken.isNullOrBlank()) {
+                    set("X-XSRF-TOKEN", xsrfToken)
+                } else {
+                    extractCsrfTokenFromReferer(referer)?.let { set("X-CSRF-TOKEN", it) }
+                }
             }
-        }
+            .build()
 
-        while (true) {
-            when {
-                expr.removeOuterCall("JSON.parse") != null -> {
-                    expr = expr.removeOuterCall("JSON.parse")!!
-                }
-                expr.removeOuterCall("window.JSON.parse") != null -> {
-                    expr = expr.removeOuterCall("window.JSON.parse")!!
-                }
-                expr.removeOuterCall("decodeURIComponent") != null -> {
-                    val inner = expr.removeOuterCall("decodeURIComponent")!!.trimMatchingQuotes()
-                    expr = runCatching { URLDecoder.decode(inner, "UTF-8") }
-                        .getOrElse { return null }
-                }
-                expr.removeOuterCall("window.decodeURIComponent") != null -> {
-                    val inner = expr.removeOuterCall("window.decodeURIComponent")!!.trimMatchingQuotes()
-                    expr = runCatching { URLDecoder.decode(inner, "UTF-8") }
-                        .getOrElse { return null }
-                }
-                expr.removeOuterCall("atob") != null -> {
-                    val inner = expr.removeOuterCall("atob")!!.trimMatchingQuotes()
-                    expr = runCatching {
-                        String(Base64.decode(inner, Base64.DEFAULT))
-                    }.getOrElse { return null }
-                }
-                expr.removeOuterCall("window.atob") != null -> {
-                    val inner = expr.removeOuterCall("window.atob")!!.trimMatchingQuotes()
-                    expr = runCatching {
-                        String(Base64.decode(inner, Base64.DEFAULT))
-                    }.getOrElse { return null }
-                }
-                else -> break
+        return client.newCall(POST("$baseUrl/api/player-url", apiHeaders, body)).execute().use { apiResponse ->
+            if (!apiResponse.isSuccessful) return null
+            PLAYER_URL_REGEX.find(apiResponse.body.string())
+                ?.groupValues
+                ?.get(1)
+                ?.replace("\\/", "/")
+        }
+    }
+
+    private fun fetchXsrfCookie(referer: String) {
+        client.newCall(GET("$baseUrl/sanctum/csrf-cookie", headersBuilder().set("Referer", referer).build()))
+            .execute()
+            .close()
+    }
+
+    private fun extractPelisSeriesHoyVideos(playerUrl: String): List<Video> {
+        val playerHeaders = headersBuilder()
+            .set("Referer", "$baseUrl/")
+            .build()
+        val playerBody = client.newCall(GET(playerUrl, playerHeaders)).execute().use { response ->
+            if (!response.isSuccessful) return emptyList()
+            response.body.string()
+        }
+        val token = PLAYER_TOKEN_REGEX.find(playerBody)?.groupValues?.get(1) ?: return emptyList()
+        val apiHeaders = headersBuilder()
+            .set("Accept", "*/*")
+            .set("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
+            .set("Origin", PLAYER_BASE_URL)
+            .set("Referer", playerUrl)
+            .build()
+
+        val servers = resolvePelisSeriesHoyServers(token, apiHeaders)
+        if (servers.isEmpty()) return emptyList()
+
+        postPelisSeriesHoyForm("a=click&tok=${token.urlEncode()}", apiHeaders)
+
+        return servers.flatMap { (label, serverId) ->
+            resolvePelisSeriesHoyServer(playerUrl, token, label, serverId, apiHeaders)
+        }
+    }
+
+    private fun resolvePelisSeriesHoyServers(token: String, headers: okhttp3.Headers): List<Pair<String, String>> {
+        val body = postPelisSeriesHoyForm("a=1&tok=${token.urlEncode()}", headers) ?: return emptyList()
+        return PLAYER_SERVER_REGEX.findAll(body)
+            .mapIndexed { index, match ->
+                val label = match.groupValues[1].decodeJsonUnicodeEscapes().cleanServerLabel()
+                    .ifBlank { "Server ${index + 1}" }
+                label to match.groupValues[2]
             }
-        }
-
-        expr = expr.trim().trimMatchingQuotes()
-
-        return expr.takeIf { it.isNotBlank() }
+            .distinctBy { it.second }
+            .toList()
     }
 
-    private fun extractNewExtractorLinks(doc: Document, htmlContent: String): MutableList<Pair<String, String>>? {
-        val links = mutableListOf<Pair<String, String>>()
-
-        val scriptData = doc.select("script")
-            .asSequence()
-            .map(Element::data)
-            .firstOrNull { it.contains("dataLink") }
-
-        val rawExpression = scriptData?.let {
-            getFirstMatch(DATA_LINK_REGEX, it)
-        } ?: getFirstMatch(DATA_LINK_REGEX, htmlContent)
-
-        val jsonPayload = resolveDataLink(rawExpression) ?: return null
-
-        val items = runCatching {
-            json.decodeFromString<List<Item>>(jsonPayload)
-        }.getOrElse {
-            Log.e("SoloLatino", "No se pudo parsear dataLink", it)
-            return null
+    private fun resolvePelisSeriesHoyServer(
+        playerUrl: String,
+        token: String,
+        label: String,
+        serverId: String,
+        headers: okhttp3.Headers,
+    ): List<Video> {
+        val body = postPelisSeriesHoyForm(
+            "a=2&v=${serverId.urlEncode()}&tok=${token.urlEncode()}",
+            headers,
+        ) ?: return emptyList()
+        val streamBody = if (body.contains("\"msg\":\"no_click\"")) {
+            postPelisSeriesHoyForm(
+                "a=2&v=${serverId.urlEncode()}&tok=${token.urlEncode()}&r=1",
+                headers,
+            ) ?: return emptyList()
+        } else {
+            body
         }
+        val streamUrl = STREAM_URL_REGEX.find(streamBody)
+            ?.groupValues
+            ?.get(1)
+            ?.replace("\\/", "/")
+            ?.toAbsolutePlayerUrl()
+            ?: return emptyList()
 
-        val langs = mapOf("LAT" to "[LAT]", "ESP" to "[CAST]", "SUB" to "[SUB]")
-
-        items.forEach { item ->
-            val languageCode = langs[item.video_language] ?: "unknown"
-
-            item.sortedEmbeds.forEach { embed ->
-                if (!embed.type.equals("video", ignoreCase = true)) return@forEach
-
-                val decryptedLink = decryptEmbedLink(embed.link)
-
-                decryptedLink?.let { links.add(it to languageCode) }
-            }
-        }
-
-        return links.ifEmpty { null }
+        return listOf(newVideo(streamUrl, "SoloLatino - $label", playerUrl))
     }
 
-    private fun decryptEmbedLink(rawLink: String?): String? {
-        if (rawLink.isNullOrBlank()) return null
-
-        val link = rawLink.trim()
-        if (link.startsWith("http", true)) return link
-
-        CryptoAES.decryptCbcIV(link, AES_KEY)?.takeIf { it.isNotBlank() }?.let { return it }
-        CryptoAES.decrypt(link, AES_KEY).takeIf { it.isNotBlank() }?.let { return it }
-
-        decodeJwtLink(link)?.takeIf { it.isNotBlank() }?.let { return it }
-
-        return null
+    private fun postPelisSeriesHoyForm(body: String, headers: okhttp3.Headers): String? {
+        return client.newCall(
+            POST("$PLAYER_BASE_URL/s.php", headers, body.toRequestBody(FORM_MEDIA_TYPE)),
+        ).execute().use { response ->
+            if (!response.isSuccessful) return null
+            response.body.string()
+        }
     }
 
-    private fun decodeJwtLink(token: String): String? {
-        val segments = token.split('.')
-        if (segments.size < 2) return null
+    private fun newVideo(videoUrl: String, quality: String, referer: String): Video {
+        return Video(videoUrl, quality, videoUrl, headersBuilder().set("Referer", referer).build())
+    }
 
-        val payload = segments[1].padBase64Url()
-
+    private fun extractCsrfTokenFromReferer(referer: String): String? {
         return runCatching {
-            val decoded = Base64.decode(payload, Base64.URL_SAFE or Base64.NO_WRAP)
-            val element = json.parseToJsonElement(String(decoded))
-            val obj = element.jsonObject
-
-            val link = obj["link"]?.jsonPrimitive?.contentOrNull
-            val nestedLink = obj["data"]?.jsonObject?.get("link")?.jsonPrimitive?.contentOrNull
-
-            link ?: nestedLink
+            client.newCall(GET(referer, headers)).execute().use { response ->
+                CSRF_TOKEN_REGEX.find(response.body.string())?.groupValues?.get(1)
+            }
         }.getOrNull()
     }
 
-    private fun String.padBase64Url(): String {
-        val padding = (4 - length % 4) % 4
-        return this + "=".repeat(padding)
-    }
-
-    private fun extractOldExtractorLinks(doc: Document): List<String>? {
-        val links = mutableListOf<String>()
-        doc.getElementsByTag("li").forEach { link ->
-            runCatching {
-                val onclickAttr = link.attr("onclick")
-                val decoded = getFirstMatch("""\.php\?link=(.+?)&servidor=""".toRegex(), onclickAttr)
-                links.add(String(Base64.decode(decoded, Base64.DEFAULT)))
-
-                extractPlayerLink(onclickAttr, """go_to_playerVast\('(.+?)'""")?.let { links.add(it) }
-                extractPlayerLink(onclickAttr, """go_to_player\('(.+?)'""")?.let { links.add(it) }
-            }.onFailure {
-                Log.e("SoloLatino", "Error al procesar enlace antiguo: ${it.message}")
-            }
-        }
-        return links.ifEmpty { null }
-    }
-
-    private fun extractPlayerLink(onclickAttr: String, pattern: String): String? {
-        return pattern.toRegex().find(onclickAttr)?.groupValues?.get(1)
-    }
-
-    // ============================== Filters ===============================
-    override val fetchGenres = false
-    override fun getFilterList() = SoloLatinoFilters.FILTER_LIST
-
     // ============================== Search ================================
-
-    override fun searchAnimeFromElement(element: Element): SAnime = popularAnimeFromElement(element)
+    override fun searchAnimeFromElement(element: Element): SAnime = animeFromCard(element)
 
     override fun searchAnimeSelector() = popularAnimeSelector()
+
+    override fun searchAnimeNextPageSelector() = popularAnimeNextPageSelector()
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
         val params = SoloLatinoFilters.getSearchParameters(filters)
         val path = when {
-            params.genre.isNotBlank() -> {
-                when (params.genre) {
-                    "animes" -> "/genres_animes"
-                    "peliculas" -> "/genres"
-                    "series" -> "/genres_series"
-                    "tendencias", "ratings", "genre_series/toons" -> "/${params.genre}"
-                    else -> "/genres/${params.genre}"
-                }
-            }
-            params.platform.isNotBlank() -> "/network/${params.platform}"
-            params.year.isNotBlank() -> "/year/${params.year}"
-            else -> buildString {
-                append(
-                    when {
-                        query.isNotBlank() -> "/?s=$query"
-                        else -> "/"
-                    },
-                )
-
-                append(
-                    when (params.type) {
-                        "serie" -> "series"
-                        "pelicula" -> "peliculas"
-                        "anime" -> "animes"
-                        "toon" -> "genre_series/toons"
-                        "todos" -> ""
-                        else -> "tendencias"
-                    },
-
-                )
-
-                if (params.isInverted) append("&orden=asc")
+            query.isNotBlank() -> "/buscar?q=${query.urlEncode()}&page=$page"
+            params.genre.isNotBlank() -> "/genero/${params.genre}?page=$page"
+            params.platform.isNotBlank() -> "/red/${params.platform}?page=$page"
+            params.year.isNotBlank() -> "/buscar?year=${params.year}&page=$page"
+            else -> when (params.type) {
+                "serie" -> "/series?page=$page"
+                "pelicula" -> "/peliculas?page=$page"
+                "anime" -> "/animes?page=$page"
+                "toon" -> "/genero/dibujos?page=$page"
+                else -> "/buscar?sort=rating&page=$page"
             }
         }
 
-        return if (path.startsWith("/?s=")) {
-            GET("$baseUrl/page/$page$path")
-        } else {
-            GET("$baseUrl$path/page/$page")
-        }
+        return GET("$baseUrl$path", headers)
     }
 
     // ============================= Details ================================
-    override val additionalInfoSelector = "#single > div.content > div.wp-content"
+    override val additionalInfoSelector = "main"
 
-    override fun animeDetailsParse(document: Document): SAnime {
-        val doc = getRealAnimeDoc(document)
-        val sheader = doc.selectFirst("div.sheader")
-        return SAnime.create().apply {
-            setUrlWithoutDomain(doc.location())
-            sheader?.selectFirst("div.poster > img")?.let {
-                thumbnail_url = it.getImageUrl()
-                title = it.attr("alt").ifEmpty {
-                    sheader.selectFirst("div.data > h1")?.text() ?: "Película/Serie"
-                }
-            }
+    override fun animeDetailsParse(document: Document): SAnime = SAnime.create().apply {
+        val main = document.selectFirst("main") ?: document
+        val titleElement = main.selectFirst("h1:not(.sr-only), h1.sr-only")
+        val poster = main.selectFirst("img[style*=aspect-ratio], img.w-44, img.w-52, img[src*=/w500/]")
 
-            genre = sheader?.select("div.data > div.sgeneros > a")
-                ?.eachText()
-                ?.joinToString()
-                ?: ""
-
-            doc.selectFirst(additionalInfoSelector)?.let { info ->
-                description = buildString {
-                    append(doc.getDescription())
-                    additionalInfoItems.forEach {
-                        info.getInfo(it)?.let(::append)
-                    }
-                }
-            }
-        }
+        setUrlWithoutDomain(document.location())
+        title = titleElement?.text()?.trim()
+            ?: poster?.attr("alt")?.trim()
+            ?: document.title().substringBefore(" — ").substringBefore(" | ").trim()
+        thumbnail_url = poster?.getImageUrl()
+        genre = main.select("a[href*=/genero/]")
+            .eachText()
+            .distinct()
+            .joinToString()
+        description = main.select("p.text-sm.leading-relaxed, p.line-clamp-3")
+            .firstOrNull { it.text().length > 60 }
+            ?.text()
+            ?.trim()
+            .orEmpty()
     }
-
-    // ============================= Serialization ===========================
-    @Serializable
-    data class Item(
-        val file_id: Int,
-        val video_language: String,
-        val sortedEmbeds: List<Embed>,
-    )
-
-    @Serializable
-    data class Embed(
-        val servername: String,
-        val link: String? = null,
-        val type: String,
-        val download: String? = null,
-    )
 
     // ============================= Preferences ============================
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        super.setupPreferenceScreen(screen) // Quality preference
+        super.setupPreferenceScreen(screen)
 
         ListPreference(screen.context).apply {
             key = PREF_SERVER_KEY
@@ -559,71 +319,83 @@ class SoloLatino : DooPlay(
             entryValues = SERVER_LIST
             setDefaultValue(PREF_SERVER_DEFAULT)
             summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString(key, entry).commit()
-            }
         }.also(screen::addPreference)
 
-        val langPref = ListPreference(screen.context).apply {
+        ListPreference(screen.context).apply {
             key = PREF_LANG_KEY
             title = PREF_LANG_TITLE
             entries = PREF_LANG_ENTRIES
             entryValues = PREF_LANG_VALUES
             setDefaultValue(PREF_LANG_DEFAULT)
             summary = "%s"
-
-            setOnPreferenceChangeListener { _, newValue ->
-                val selected = newValue as String
-                val index = findIndexOfValue(selected)
-                val entry = entryValues[index] as String
-                preferences.edit().putString(key, entry).commit()
-            }
-        }
-        screen.addPreference(langPref)
+        }.also(screen::addPreference)
     }
 
     // ============================= Utilities ==============================
-
     override fun String.toDate(): Long {
-        return try {
-            val dateFormat = SimpleDateFormat("MMM. dd, yyyy", Locale.ENGLISH)
-            val date = dateFormat.parse(this)
-            date?.time ?: 0L
-        } catch (_: Exception) {
-            0L
-        }
+        val value = trim()
+        return DATE_FORMATTERS.firstNotNullOfOrNull { formatter ->
+            runCatching { formatter.parse(value)?.time }.getOrNull()
+        } ?: 0L
     }
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString(prefQualityKey, prefQualityDefault) ?: prefQualityDefault
         val server = preferences.getString(PREF_SERVER_KEY, PREF_SERVER_DEFAULT) ?: PREF_SERVER_DEFAULT
-        val lang = preferences.getString(PREF_LANG_TITLE, PREF_LANG_DEFAULT) ?: PREF_LANG_DEFAULT
-        return sortedWith(
-            compareBy(
-                { it.quality.contains(lang) },
-                { it.quality.contains(server, true) },
-                { it.quality.contains(quality.substringBefore("p")) },
-            ),
-        ).reversed()
+        return sortedWith(compareBy { it.quality.contains(server, true) }).reversed()
     }
 
-    override val prefQualityValues = arrayOf("480p", "720p", "1080p")
-    override val prefQualityEntries = prefQualityValues
+    private fun String.urlEncode(): String = URLEncoder.encode(this, "UTF-8")
+
+    private fun String.toAbsolutePlayerUrl(): String {
+        return if (startsWith("/")) "$PLAYER_BASE_URL$this" else this
+    }
+
+    private fun String.isDirectVideoUrl(): Boolean {
+        return contains(".m3u8", ignoreCase = true) ||
+            contains(".mp4", ignoreCase = true) ||
+            contains("/p.php", ignoreCase = true)
+    }
+
+    private fun String.decodeJsonUnicodeEscapes(): String {
+        return UNICODE_ESCAPE_REGEX.replace(this) { match ->
+            match.groupValues[1].toInt(16).toChar().toString()
+        }
+    }
+
+    private fun String.cleanServerLabel(): String {
+        return filter { it.isLetterOrDigit() || it.isWhitespace() || it == '+' || it == '-' }
+            .trim()
+    }
 
     companion object {
-        private val DATA_LINK_REGEX = """dataLink\s*=\s*([^;]+);""".toRegex(RegexOption.DOT_MATCHES_ALL)
-        private const val AES_KEY = "Ak7qrvvH4WKYxV2OgaeHAEg2a5eh16vE"
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+        private const val PLAYER_BASE_URL = "https://player.pelisserieshoy.com"
+        private const val PLAYER_HOST = "player.pelisserieshoy.com"
+        private const val CARD_SELECTOR = "a[href*=/serie/]:has(img.card__poster), a[href*=/pelicula/]:has(img.card__poster)"
+        private val JSON_MEDIA_TYPE = "application/json".toMediaType()
+        private val FORM_MEDIA_TYPE = "application/x-www-form-urlencoded;charset=UTF-8".toMediaType()
+        private val SEASON_EPISODE_REGEX = "/temporada-(\\d+)/episodio-(\\d+)".toRegex()
+        private val PLAYER_URL_REGEX = """"url"\s*:\s*"([^"]+)""".toRegex()
+        private val PLAYER_TOKEN_REGEX = """const\s+_t\s*=\s*'([^']+)'""".toRegex()
+        private val PLAYER_SERVER_REGEX = """\["([^"]+)","([a-f0-9]{32})"\]""".toRegex()
+        private val STREAM_URL_REGEX = """"u"\s*:\s*"([^"]+)""".toRegex()
+        private val UNICODE_ESCAPE_REGEX = """\\u([0-9a-fA-F]{4})""".toRegex()
+        private val CSRF_TOKEN_REGEX = """csrf-token"\s+content="([^"]+)""".toRegex()
+        private val DATE_SLASH_REGEX = """\d{2}/\d{2}/\d{4}""".toRegex()
+        private val DATE_FORMATTERS = listOf(
+            SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH),
+            SimpleDateFormat("dd 'de' MMMM 'de' yyyy", Locale("es", "ES")),
+            SimpleDateFormat("dd 'de' MMMM 'de' yyyy", Locale.ENGLISH),
+        )
+
         private const val PREF_LANG_KEY = "preferred_lang"
         private const val PREF_LANG_TITLE = "Preferred language"
         private const val PREF_LANG_DEFAULT = "[LAT]"
+        private val PREF_LANG_ENTRIES = arrayOf("Latino", "Castellano", "Subtitulado", "Unknown")
+        private val PREF_LANG_VALUES = arrayOf("[LAT]", "[CAST]", "[SUB]", "[UNK]")
+
         private const val PREF_SERVER_KEY = "preferred_server"
-        private const val PREF_SERVER_DEFAULT = "StreamWish"
-        private val SERVER_LIST = arrayOf("StreamWish", "Uqload", "VidGuard", "Dood", "StreamHideVid", "Voe, VidHide, Luluvdo, VidHidePro, VidHidePlus")
-        private val PREF_LANG_ENTRIES = arrayOf("[LAT]", "[SUB]", "[CAST]")
-        private val PREF_LANG_VALUES = arrayOf("[LAT]", "[SUB]", "[CAST]")
+        private const val PREF_SERVER_DEFAULT = "SoloLatino"
+        private val SERVER_LIST = arrayOf("SoloLatino")
     }
 }

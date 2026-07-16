@@ -13,17 +13,15 @@ object SoloLatinoFilters {
         vals.map { it.first }.toTypedArray(),
     ) {
 
-        fun toUriPart() = vals[state].second
+        fun toUriPart() = vals.getOrNull(state)?.second.orEmpty()
     }
 
-    private inline fun <reified R> AnimeFilterList.getFirst(): R {
-        return first { it is R } as R
+    private inline fun <reified R> AnimeFilterList.getFirstOrNull(): R? {
+        return firstOrNull { it is R } as? R
     }
 
     private inline fun <reified R> AnimeFilterList.asUriPart(): String {
-        return getFirst<R>().let {
-            (it as UriPartFilter).toUriPart()
-        }
+        return (getFirstOrNull<R>() as? UriPartFilter)?.toUriPart().orEmpty()
     }
 
     class InvertedResultsFilter : AnimeFilter.CheckBox("Invertir resultados", false)
@@ -43,7 +41,7 @@ object SoloLatinoFilters {
     )
 
     private inline fun <reified R> AnimeFilter.Group<UriPartFilter>.getItemUri(): String {
-        return state.first { it is R }.toUriPart()
+        return state.firstOrNull { it is R }?.toUriPart().orEmpty()
     }
 
     val FILTER_LIST get() = AnimeFilterList(
@@ -65,14 +63,14 @@ object SoloLatinoFilters {
     internal fun getSearchParameters(filters: AnimeFilterList): FilterSearchParams {
         if (filters.isEmpty()) return FilterSearchParams()
 
-        val others = filters.getFirst<OtherOptionsGroup>()
+        val others = filters.getFirstOrNull<OtherOptionsGroup>()
 
         return FilterSearchParams(
-            filters.getFirst<InvertedResultsFilter>().state,
+            filters.getFirstOrNull<InvertedResultsFilter>()?.state ?: false,
             filters.asUriPart<TypeFilter>(),
-            others.getItemUri<GenreFilter>(),
-            others.getItemUri<PlatformFilter>(),
-            others.getItemUri<YearFilter>(),
+            others?.getItemUri<GenreFilter>().orEmpty(),
+            others?.getItemUri<PlatformFilter>().orEmpty(),
+            others?.getItemUri<YearFilter>().orEmpty(),
         )
     }
 
