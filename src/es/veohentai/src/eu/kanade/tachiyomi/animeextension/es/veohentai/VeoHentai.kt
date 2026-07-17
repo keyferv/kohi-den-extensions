@@ -10,11 +10,12 @@ import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
-import eu.kanade.tachiyomi.animesource.model.Track
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
+import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.Response
@@ -43,7 +44,11 @@ open class VeoHentai : ConfigurableAnimeSource, AnimeHttpSource() {
         private const val PREF_SERVER_KEY = "preferred_server"
         private const val PREF_SERVER_DEFAULT = "VeoHentai"
         private val SERVER_LIST = arrayOf("VeoHentai")
+
+        private const val DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     }
+
+    private val videoUrlResolver by lazy { VideoUrlResolver() }
 
     override fun animeDetailsParse(response: Response): SAnime {
         val document = response.asJsoup()
@@ -111,32 +116,55 @@ open class VeoHentai : ConfigurableAnimeSource, AnimeHttpSource() {
         val frame = document.selectFirst("iframe[webkitallowfullscreen]")
         val src = frame?.attr("abs:src")?.takeIf { !it.startsWith("about") }
         val dataLitespeedSrc = frame?.attr("data-litespeed-src")?.takeIf { !it.startsWith("about") }
-        val link = when {
-            src != null -> src
-            dataLitespeedSrc != null -> dataLitespeedSrc
-            else -> return emptyList()
-        }
+        val playerUrl = listOfNotNull(dataLitespeedSrc, src)
+            .distinct()
+            .sortedByDescending { it.contains("hentaiplayer.com", ignoreCase = true) }
+            .firstNotNullOfOrNull { link ->
+                runCatching {
+                    val docPlayer = client.newCall(GET(link)).execute().asJsoup()
+                    val dataId = docPlayer.selectFirst("[data-id]")?.attr("data-id") ?: return@runCatching null
+                    val host = docPlayer.location().toHttpUrl().host
+                    "https://$host$dataId"
+                }.getOrNull()
+            } ?: return emptyList()
 
-        val docPlayer = client.newCall(GET(link)).execute().asJsoup()
-        val dataId = docPlayer.selectFirst("[data-id]")?.attr("data-id") ?: return emptyList()
-        val host = docPlayer.location().toHttpUrl().host
-        val realPlayer = client.newCall(GET("https://$host$dataId")).execute().asJsoup()
-        val scriptPlayer = realPlayer.selectFirst("script:containsData(jwplayer.key)")?.data() ?: return emptyList()
+        val result = videoUrlResolver.getVideoUrl(playerUrl, headers)
+        if (result.url.isBlank()) return emptyList()
 
-        val subs = scriptPlayer.substringAfter("tracks:").substringBefore("]").getItems().map {
-            it.substringAfter("file\": \"").substringAfter("file: \"").substringBefore("\"") to
-                it.substringAfter("label\": \"").substringAfter("label: \"").substringBefore("\"")
-        }.filter { (file, _) -> file.isNotEmpty() }.map { (file, label) -> Track(file, label) }
-
-        return scriptPlayer.substringAfter("sources:").substringBefore("]").getItems().map {
-            val file = it.substringAfter("file\": \"").substringAfter("file: \"").substringBefore("\"")
-            val type = when {
-                file.contains(".m3u") -> "HSL"
-                file.contains(".mp4") -> "MP4"
-                else -> ""
+        // The WebView resolver can obtain the signed R2 URL, but Cloudflare may still
+        // reject the native MPV/ffmpeg playback request because it does not share the
+        // same browser/TLS fingerprint as WebView. Keep browser-like headers here as
+        // the best extension-level attempt; a complete fix likely requires app-level
+        // WebView playback, a browser-like proxy, or a different player network stack.
+        if (result.cookies.isNotEmpty()) {
+            result.cookies.forEach { cookie ->
+                client.cookieJar.saveFromResponse(
+                    url = HttpUrl.Builder()
+                        .scheme("http")
+                        .host(cookie.domain)
+                        .build(),
+                    cookies = listOf(cookie),
+                )
             }
-            Video(file, "VeoHentai:$type", file, subtitleTracks = subs)
         }
+
+        val videoHeaders = Headers.Builder().apply {
+            add("Referer", result.referer)
+            add("User-Agent", headers["User-Agent"] ?: DEFAULT_UA)
+            add("Accept", "*/*")
+            add("Accept-Language", "en,de;q=0.9")
+            add("Sec-Fetch-Site", "cross-site")
+            add("Sec-Fetch-Mode", "no-cors")
+            add("Sec-Fetch-Dest", "video")
+            add("Sec-Fetch-Storage-Access", "active")
+            if (result.cookies.isNotEmpty()) {
+                add("Cookie", result.cookies.joinToString("; ") { "${it.name}=${it.value}" })
+            }
+        }.build()
+
+        return listOf(
+            Video(result.url, "VeoHentai:MP4", result.url, headers = videoHeaders, subtitleTracks = emptyList()),
+        )
     }
 
     override fun List<Video>.sort(): List<Video> {
