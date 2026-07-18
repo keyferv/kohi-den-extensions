@@ -22,6 +22,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
 import eu.kanade.tachiyomi.util.parallelCatchingFlatMapBlocking
 import eu.kanade.tachiyomi.util.parseAs
+import kotlinx.coroutines.runBlocking
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -83,7 +84,16 @@ class VerAnimes : ConfigurableAnimeSource, AnimeHttpSource() {
         return animeDetails
     }
 
-    override fun popularAnimeRequest(page: Int) = GET("$baseUrl/animes?orden=desc&pag=$page", headers)
+    override fun popularAnimeRequest(page: Int): Request {
+        if (page == 1) {
+            runBlocking {
+                try {
+                    VerAnimesFilters.fetchFilters(client, headers, baseUrl)
+                } catch (_: Exception) { }
+            }
+        }
+        return GET("$baseUrl/animes?orden=desc&pag=$page", headers)
+    }
 
     override fun popularAnimeParse(response: Response): AnimesPage {
         val document = response.asJsoup()
@@ -101,7 +111,7 @@ class VerAnimes : ConfigurableAnimeSource, AnimeHttpSource() {
 
     override fun latestUpdatesParse(response: Response) = popularAnimeParse(response)
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/animes?estado=en-emision&orden=desc&pag=$page", headers)
+    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/animes?orden=desc&pag=$page", headers)
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
         val params = VerAnimesFilters.getSearchParameters(filters)
@@ -193,7 +203,7 @@ class VerAnimes : ConfigurableAnimeSource, AnimeHttpSource() {
         ).reversed()
     }
 
-    override fun getFilterList(): AnimeFilterList = VerAnimesFilters.FILTER_LIST
+    override fun getFilterList(): AnimeFilterList = VerAnimesFilters.getFilterList()
 
     private fun Array<String>.any(url: String): Boolean = this.any { url.contains(it, ignoreCase = true) }
 
