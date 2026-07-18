@@ -157,7 +157,8 @@ class HomeCine : ConfigurableAnimeSource, AnimeHttpSource() {
             )
         }
 
-        // Series list every episode inline under #seasons (no AJAX needed)
+        // Series — sequential episode numbering to avoid Aniyomi "missing items"
+        var counter = 0
         return seasons.flatMap { season ->
             val seasonNum = Regex("\\d+").find(season.selectFirst(".les-title strong")?.text().orEmpty())
                 ?.value?.toIntOrNull() ?: 1
@@ -166,7 +167,7 @@ class HomeCine : ConfigurableAnimeSource, AnimeHttpSource() {
                 SEpisode.create().apply {
                     setUrlWithoutDomain(ep.attr("abs:href"))
                     name = "T$seasonNum - Episodio $epNum"
-                    episode_number = (seasonNum * 1000 + epNum).toFloat()
+                    episode_number = (++counter).toFloat()
                 }
             }
         }.sortedByDescending { it.episode_number }
