@@ -15,13 +15,16 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.lib.doodextractor.DoodExtractor
 import eu.kanade.tachiyomi.lib.filemoonextractor.FilemoonExtractor
+import eu.kanade.tachiyomi.lib.luluextractor.LuluExtractor
 import eu.kanade.tachiyomi.lib.mixdropextractor.MixDropExtractor
+import eu.kanade.tachiyomi.lib.mp4uploadextractor.Mp4uploadExtractor
 import eu.kanade.tachiyomi.lib.okruextractor.OkruExtractor
 import eu.kanade.tachiyomi.lib.playlistutils.PlaylistUtils
 import eu.kanade.tachiyomi.lib.streamtapeextractor.StreamTapeExtractor
 import eu.kanade.tachiyomi.lib.streamwishextractor.StreamWishExtractor
 import eu.kanade.tachiyomi.lib.universalextractor.UniversalExtractor
 import eu.kanade.tachiyomi.lib.uqloadextractor.UqloadExtractor
+import eu.kanade.tachiyomi.lib.vidguardextractor.VidGuardExtractor
 import eu.kanade.tachiyomi.lib.voeextractor.VoeExtractor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
@@ -319,7 +322,11 @@ class Doramasyt : ConfigurableAnimeSource, AnimeHttpSource() {
             url.contains("voe") || url.contains("filemoon") ||
             url.contains("dood") || url.contains("streamtape") ||
             url.contains("mixdrop") || url.contains("uqload") ||
-            url.contains("ok.ru") || url.contains("streamwish")
+            url.contains("ok.ru") || url.contains("streamwish") ||
+            url.contains("lulu") || url.contains("mp4upload") ||
+            url.contains("savefiles") || url.contains("listeamed") ||
+            url.contains("vidply") || url.contains("mega") ||
+            url.contains("bysekoze") || url.contains("dsvplay")
     }
 
     override fun getFilterList(): AnimeFilterList = DoramasytFilters.getFilterList()
@@ -334,6 +341,9 @@ class Doramasyt : ConfigurableAnimeSource, AnimeHttpSource() {
     private val streamTapeExtractor by lazy { StreamTapeExtractor(client) }
     private val uqloadExtractor by lazy { UqloadExtractor(client) }
     private val okruExtractor by lazy { OkruExtractor(client) }
+    private val luluExtractor by lazy { LuluExtractor(client, headers) }
+    private val mp4uploadExtractor by lazy { Mp4uploadExtractor(client) }
+    private val vidGuardExtractor by lazy { VidGuardExtractor(client) }
     private val universalExtractor by lazy { UniversalExtractor(client) }
     private val playlistUtils by lazy { PlaylistUtils(client, headers) }
 
@@ -343,12 +353,15 @@ class Doramasyt : ConfigurableAnimeSource, AnimeHttpSource() {
             embedUrl.contains("voe") -> voeExtractor.videosFromUrl(url)
             embedUrl.contains("uqload") -> uqloadExtractor.videosFromUrl(url)
             embedUrl.contains("ok.ru") || embedUrl.contains("okru") -> okruExtractor.videosFromUrl(url)
-            embedUrl.contains("filemoon") || embedUrl.contains("moonplayer") -> filemoonExtractor.videosFromUrl(url, prefix = "Filemoon:")
+            embedUrl.contains("filemoon") || embedUrl.contains("moonplayer") || embedUrl.contains("bysekoze") -> filemoonExtractor.videosFromUrl(url, prefix = "Filemoon:")
             embedUrl.contains("wishembed") || embedUrl.contains("streamwish") || embedUrl.contains("strwish") || embedUrl.contains("wish") || embedUrl.contains("wishfast") -> streamwishExtractor.videosFromUrl(url, videoNameGen = { "StreamWish:$it" })
             embedUrl.contains("streamtape") || embedUrl.contains("stp") || embedUrl.contains("stape") -> streamTapeExtractor.videosFromUrl(url)
             embedUrl.contains("cybervynx") || embedUrl.contains("medixiru") -> cybervynxVideosFromUrl(url)
-            embedUrl.contains("doodstream") || embedUrl.contains("dood.") || embedUrl.contains("ds2play") || embedUrl.contains("doods.") -> doodExtractor.videosFromUrl(url)
+            embedUrl.contains("doodstream") || embedUrl.contains("dood.") || embedUrl.contains("ds2play") || embedUrl.contains("doods.") || embedUrl.contains("dsvplay") -> doodExtractor.videosFromUrl(url)
             embedUrl.contains("filelions") || embedUrl.contains("lion") -> streamwishExtractor.videosFromUrl(url, videoNameGen = { "FileLions:$it" })
+            embedUrl.contains("luluvdo") || embedUrl.contains("lulu") -> luluExtractor.videosFromUrl(url, "")
+            embedUrl.contains("mp4upload") -> mp4uploadExtractor.videosFromUrl(url, headers)
+            embedUrl.contains("listeamed") || embedUrl.contains("vembed") || embedUrl.contains("vidguard") || embedUrl.contains("vgfplay") || embedUrl.contains("bembed") -> vidGuardExtractor.videosFromUrl(url, "")
             embedUrl.contains("mix") || embedUrl.contains("mxdrop") -> mixdropExtractor.videosFromUrl(url)
             else -> universalExtractor.videosFromUrl(url, headers)
         }
