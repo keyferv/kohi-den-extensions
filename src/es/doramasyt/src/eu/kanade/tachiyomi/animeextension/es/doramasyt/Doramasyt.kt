@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.animeextension.es.doramasyt
 import android.app.Application
 import android.content.SharedPreferences
 import android.util.Base64
+import android.util.Log
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import dev.datlag.jsunpacker.JsUnpacker
@@ -234,7 +235,9 @@ class Doramasyt : ConfigurableAnimeSource, AnimeHttpSource() {
         }
 
         return videoUrls.flatMap { videoUrl ->
-            runCatching { serverVideoResolver(videoUrl) }.getOrDefault(emptyList())
+            runCatching { serverVideoResolver(videoUrl, referer) }
+                .onFailure { Log.e("Doramasyt", "Failed to resolve video host: ${videoUrl.take(80)}", it) }
+                .getOrDefault(emptyList())
         }
     }
 
@@ -347,13 +350,13 @@ class Doramasyt : ConfigurableAnimeSource, AnimeHttpSource() {
     private val universalExtractor by lazy { UniversalExtractor(client) }
     private val playlistUtils by lazy { PlaylistUtils(client, headers) }
 
-    private fun serverVideoResolver(url: String): List<Video> {
+    private fun serverVideoResolver(url: String, referer: String): List<Video> {
         val embedUrl = url.lowercase()
         return when {
             embedUrl.contains("voe") -> voeExtractor.videosFromUrl(url)
             embedUrl.contains("uqload") -> uqloadExtractor.videosFromUrl(url)
             embedUrl.contains("ok.ru") || embedUrl.contains("okru") -> okruExtractor.videosFromUrl(url)
-            embedUrl.contains("filemoon") || embedUrl.contains("moonplayer") || embedUrl.contains("bysekoze") -> filemoonExtractor.videosFromUrl(url, prefix = "Filemoon:")
+            embedUrl.contains("filemoon") || embedUrl.contains("moonplayer") || embedUrl.contains("bysekoze") -> filemoonExtractor.videosFromUrl(url, prefix = "Filemoon:", headers = headers, referer = referer)
             embedUrl.contains("wishembed") || embedUrl.contains("streamwish") || embedUrl.contains("strwish") || embedUrl.contains("wish") || embedUrl.contains("wishfast") -> streamwishExtractor.videosFromUrl(url, videoNameGen = { "StreamWish:$it" })
             embedUrl.contains("streamtape") || embedUrl.contains("stp") || embedUrl.contains("stape") -> streamTapeExtractor.videosFromUrl(url)
             embedUrl.contains("cybervynx") || embedUrl.contains("medixiru") -> cybervynxVideosFromUrl(url)

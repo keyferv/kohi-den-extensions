@@ -8,10 +8,9 @@ import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
-import okhttp3.internal.commonEmptyHeaders
 import java.io.File
 
-class PlaylistUtils(private val client: OkHttpClient, private val headers: Headers = commonEmptyHeaders) {
+class PlaylistUtils(private val client: OkHttpClient, private val headers: Headers = Headers.Builder().build()) {
 
     // ================================ M3U8 ================================
 
