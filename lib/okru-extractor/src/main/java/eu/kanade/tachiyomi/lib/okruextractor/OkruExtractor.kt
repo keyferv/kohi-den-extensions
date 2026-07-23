@@ -6,7 +6,6 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
 import okhttp3.OkHttpClient
-import okhttp3.internal.commonEmptyHeaders
 
 class OkruExtractor(private val client: OkHttpClient) {
     private val playlistUtils by lazy { PlaylistUtils(client) }
@@ -25,7 +24,11 @@ class OkruExtractor(private val client: OkHttpClient) {
         return qualities.find { it.first == quality }?.second ?: quality
     }
 
-    fun videosFromUrl(url: String, prefix: String = "", fixQualities: Boolean = true, headers: Headers = commonEmptyHeaders): List<Video> {
+    fun videosFromUrl(url: String, prefix: String = "", fixQualities: Boolean = true, headers: Headers = Headers.Builder().build()): List<Video> {
+        val videoHeaders = headers.newBuilder()
+            .set("Referer", url)
+            .set("Origin", "https://ok.ru")
+            .build()
         val document = client.newCall(GET(url, headers)).execute().asJsoup()
         val videoString = document.selectFirst("div[data-options]")
             ?.attr("data-options")
@@ -34,13 +37,23 @@ class OkruExtractor(private val client: OkHttpClient) {
         return when {
             "ondemandHls" in videoString -> {
                 val playlistUrl = videoString.extractLink("ondemandHls")
-                playlistUtils.extractFromHls(playlistUrl, videoNameGen = { "Okru:$it".addPrefix(prefix) })
+                playlistUtils.extractFromHls(
+                    playlistUrl,
+                    masterHeaders = videoHeaders,
+                    videoHeaders = videoHeaders,
+                    videoNameGen = { "Okru:$it".addPrefix(prefix) },
+                )
             }
             "ondemandDash" in videoString -> {
                 val playlistUrl = videoString.extractLink("ondemandDash")
-                playlistUtils.extractFromDash(playlistUrl, videoNameGen = { it -> "Okru:$it".addPrefix(prefix) })
+                playlistUtils.extractFromDash(
+                    playlistUrl,
+                    videoNameGen = { it -> "Okru:$it".addPrefix(prefix) },
+                    mpdHeaders = videoHeaders,
+                    videoHeaders = videoHeaders,
+                )
             }
-            else -> videosFromJson(videoString, prefix, fixQualities)
+            else -> videosFromJson(videoString, prefix, fixQualities, videoHeaders)
         }
     }
 
@@ -54,7 +67,7 @@ class OkruExtractor(private val client: OkHttpClient) {
             .substringBefore("\\\"")
             .replace("\\\\u0026", "&")
 
-    private fun videosFromJson(videoString: String, prefix: String = "", fixQualities: Boolean = true): List<Video> {
+    private fun videosFromJson(videoString: String, prefix: String = "", fixQualities: Boolean = true, headers: Headers): List<Video> {
         val arrayData = videoString.substringAfter("\\\"videos\\\":[{\\\"name\\\":\\\"")
             .substringBefore("]")
 
@@ -70,7 +83,7 @@ class OkruExtractor(private val client: OkHttpClient) {
             val videoQuality = "Okru:$quality".addPrefix(prefix)
 
             if (videoUrl.startsWith("https://")) {
-                Video(videoUrl, videoQuality, videoUrl)
+                Video(videoUrl, videoQuality, videoUrl, headers = headers)
             } else {
                 null
             }

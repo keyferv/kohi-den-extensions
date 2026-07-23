@@ -13,17 +13,15 @@ object DeTodoPeliculasFilters {
         vals.map { it.first }.toTypedArray(),
     ) {
 
-        fun toUriPart() = vals[state].second
+        fun toUriPart() = vals.getOrNull(state)?.second.orEmpty()
     }
 
-    private inline fun <reified R> AnimeFilterList.getFirst(): R {
-        return first { it is R } as R
+    internal inline fun <reified R> AnimeFilterList.getFirstOrNull(): R? {
+        return firstOrNull { it is R } as? R
     }
 
     private inline fun <reified R> AnimeFilterList.asUriPart(): String {
-        return getFirst<R>().let {
-            (it as UriPartFilter).toUriPart()
-        }
+        return (getFirstOrNull<R>() as? UriPartFilter)?.toUriPart().orEmpty()
     }
 
     class GenreFilter : UriPartFilter("Generos", AnimesOnlineNinjaData.GENRES)
