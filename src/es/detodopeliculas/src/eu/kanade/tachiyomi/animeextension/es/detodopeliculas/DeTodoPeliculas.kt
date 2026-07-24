@@ -13,6 +13,7 @@ import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.lib.cloudflareinterceptor.CloudflareInterceptor
+import eu.kanade.tachiyomi.lib.filemoonextractor.FilemoonExtractor
 import eu.kanade.tachiyomi.lib.okruextractor.OkruExtractor
 import eu.kanade.tachiyomi.lib.streamwishextractor.StreamWishExtractor
 import eu.kanade.tachiyomi.lib.universalextractor.UniversalExtractor
@@ -219,6 +220,7 @@ class DeTodoPeliculas : DooPlay(
     private val voeExtractor by lazy { VoeExtractor(client, headers) }
     private val universalExtractor by lazy { UniversalExtractor(client) }
     private val byseExtractor by lazy { ByseExtractor(client, headers, baseUrl) }
+    private val filemoonExtractor by lazy { FilemoonExtractor(client) }
 
 // ============================ Video Links =============================
     override fun videoListParse(response: Response): List<Video> {
@@ -338,6 +340,10 @@ class DeTodoPeliculas : DooPlay(
                     listOf("waaw", "netu", "hqq").any { normalized.contains(it, ignoreCase = true) } -> {
                         Log.d(TAG, "extractVideos: routing to UniversalExtractor for=$normalized")
                         universalExtractor.videosFromUrl(normalized, headers, prefix = "$lang - Netu")
+                    }
+                    listOf("filemoon", "moonplayer", "bysekoze").any { normalized.contains(it, ignoreCase = true) } -> {
+                        Log.d(TAG, "extractVideos: routing to FilemoonExtractor for=$normalized")
+                        filemoonExtractor.videosFromUrl(normalized, prefix = "$lang - Filemoon:", headers = headers, referer = referer)
                     }
                     listOf("byse", "bysevepoin", "bysesukior", "q8y5z").any { normalized.contains(it, ignoreCase = true) } -> {
                         Log.d(TAG, "extractVideos: routing to ByseExtractor for=$normalized")
@@ -621,6 +627,9 @@ class DeTodoPeliculas : DooPlay(
             "bysevepoin",
             "bysesukior",
             "q8y5z",
+            "filemoon",
+            "moonplayer",
+            "bysekoze",
         ).any { contains(it, ignoreCase = true) }
     }
 
@@ -975,6 +984,6 @@ class DeTodoPeliculas : DooPlay(
         private const val CLOUDFLARE_SOLVE_CACHE_MS = 60_000L
         private val PREF_LANG_ENTRIES = arrayOf("[LAT]", "[SUB]", "[CAST]")
         private val PREF_LANG_VALUES = arrayOf("[LAT]", "[SUB]", "[CAST]")
-        private val SERVER_LIST = arrayOf("StreamWish", "Uqload", "VidGuard", "VidHide", "Okru", "Voe", "Netu", "Byse")
+        private val SERVER_LIST = arrayOf("StreamWish", "Uqload", "VidGuard", "VidHide", "Okru", "Voe", "Filemoon", "Netu", "Byse")
     }
 }
