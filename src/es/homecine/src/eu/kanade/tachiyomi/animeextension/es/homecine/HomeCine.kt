@@ -177,8 +177,9 @@ class HomeCine : ConfigurableAnimeSource, AnimeHttpSource() {
         val document = response.asJsoup()
         val videoList = mutableListOf<Video>()
         document.select(".player_nav .idTabs a[href^=#]").forEach {
+            val tabLabel = it.text().trim()
             val prefix = runCatching {
-                val label = it.text().lowercase()
+                val label = tabLabel.lowercase()
                 when {
                     label.contains("latino") -> "[LAT]"
                     label.contains("castellano") -> "[CAST]"
@@ -199,7 +200,7 @@ class HomeCine : ConfigurableAnimeSource, AnimeHttpSource() {
                         val key = src.split("/").last()
                         src = "https://fastream.to/embed-$key.html"
                     }
-                    FastreamExtractor(client, headers).videosFromUrl(src, needsSleep = false, prefix = "$prefix Fastream:").also(videoList::addAll)
+                    FastreamExtractor(client, headers).videosFromUrl(src, needsSleep = false, prefix = "$prefix $tabLabel Fastream:").also(videoList::addAll)
                 }
                 if (src.contains("upstream")) {
                     UpstreamExtractor(client).videosFromUrl(src, prefix = "$prefix ").let { videoList.addAll(it) }
