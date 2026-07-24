@@ -6,6 +6,7 @@ import android.util.Log
 import android.webkit.CookieManager
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
+import eu.kanade.tachiyomi.animeextension.es.detodopeliculas.extractors.ByseExtractor
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
@@ -14,6 +15,7 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.lib.cloudflareinterceptor.CloudflareInterceptor
 import eu.kanade.tachiyomi.lib.okruextractor.OkruExtractor
 import eu.kanade.tachiyomi.lib.streamwishextractor.StreamWishExtractor
+import eu.kanade.tachiyomi.lib.universalextractor.UniversalExtractor
 import eu.kanade.tachiyomi.lib.uqloadextractor.UqloadExtractor
 import eu.kanade.tachiyomi.lib.vidguardextractor.VidGuardExtractor
 import eu.kanade.tachiyomi.lib.vidhideextractor.VidHideExtractor
@@ -62,6 +64,13 @@ class DeTodoPeliculas : DooPlay(
 
     private val cfInterceptor by lazy { CloudflareInterceptor(super.client.newBuilder().build()) }
 
+    private val directClient: OkHttpClient by lazy { super.client.newBuilder().build() }
+
+    private val cloudflareSolveLock = Any()
+
+    @Volatile
+    private var lastCloudflareSolveAt = 0L
+
     override val client: OkHttpClient by lazy {
         super.client.newBuilder()
             .addInterceptor(CfMitigatedInterceptor(this))
@@ -69,35 +78,57 @@ class DeTodoPeliculas : DooPlay(
     }
 
     fun solveCloudflare(): Boolean {
-        return try {
-            Log.d(TAG, "solveCloudflare: loading $baseUrl in WebView...")
-            val warmRequest = Request.Builder()
-                .url("$baseUrl/")
-                .headers(browserHeaders)
-                .build()
-            cfInterceptor.resolveWithWebView(warmRequest, client)
-
-            val cookieManager = CookieManager.getInstance()
-            val cookieStr = cookieManager.getCookie("$baseUrl/") ?: ""
-            Log.d(TAG, "solveCloudflare: WebView cookies present = ${cookieStr.isNotBlank()}")
-
-            val siteUrl = HttpUrl.Builder()
-                .scheme("https")
-                .host("detodopeliculas.nu")
-                .build()
-            val cookies = cookieStr.split(";")
-                .mapNotNull { Cookie.parse(siteUrl, it.trim()) }
-
-            if (cookies.isNotEmpty()) {
-                client.cookieJar.saveFromResponse(siteUrl, cookies)
-                Log.d(TAG, "solveCloudflare: saved ${cookies.size} cookies to jar with HTTPS")
+        return synchronized(cloudflareSolveLock) {
+            if (hasFreshCloudflareCookie()) {
+                Log.d(TAG, "solveCloudflare: reusing fresh WebView cookies")
+                return@synchronized true
             }
 
-            cookies.any { it.name == "cf_clearance" }
-        } catch (e: Exception) {
-            Log.e(TAG, "solveCloudflare FAILED: ${e.message}")
-            false
+            try {
+                Log.d(TAG, "solveCloudflare: loading $baseUrl in WebView...")
+                val warmRequest = Request.Builder()
+                    .url("$baseUrl/")
+                    .headers(browserHeaders)
+                    .build()
+                cfInterceptor.resolveWithWebView(warmRequest, client)
+
+                val cookieManager = CookieManager.getInstance()
+                val cookieStr = cookieManager.getCookie("$baseUrl/") ?: ""
+                Log.d(TAG, "solveCloudflare: WebView cookies present = ${cookieStr.isNotBlank()}")
+
+                val siteUrl = HttpUrl.Builder()
+                    .scheme("https")
+                    .host("detodopeliculas.nu")
+                    .build()
+                val cookies = cookieStr.split(";")
+                    .mapNotNull { Cookie.parse(siteUrl, it.trim()) }
+
+                if (cookies.isNotEmpty()) {
+                    client.cookieJar.saveFromResponse(siteUrl, cookies)
+                    Log.d(TAG, "solveCloudflare: saved ${cookies.size} cookies to jar with HTTPS")
+                }
+
+                cookies.isNotEmpty().also { solved ->
+                    if (solved) lastCloudflareSolveAt = System.currentTimeMillis()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "solveCloudflare FAILED: ${e.message}")
+                false
+            }
         }
+    }
+
+    private fun hasFreshCloudflareCookie(): Boolean {
+        if (System.currentTimeMillis() - lastCloudflareSolveAt > CLOUDFLARE_SOLVE_CACHE_MS) return false
+
+        val cookieStr = CookieManager.getInstance().getCookie("$baseUrl/").orEmpty()
+        if (cookieStr.isNotBlank()) return true
+
+        val siteUrl = HttpUrl.Builder()
+            .scheme("https")
+            .host("detodopeliculas.nu")
+            .build()
+        return client.cookieJar.loadForRequest(siteUrl).isNotEmpty()
     }
 
     private class CfMitigatedInterceptor(
@@ -186,12 +217,15 @@ class DeTodoPeliculas : DooPlay(
     private val vidHideExtractor by lazy { VidHideExtractor(client, headers) }
     private val vidGuardExtractor by lazy { VidGuardExtractor(client) }
     private val voeExtractor by lazy { VoeExtractor(client, headers) }
+    private val universalExtractor by lazy { UniversalExtractor(client) }
+    private val byseExtractor by lazy { ByseExtractor(client, headers, baseUrl) }
 
 // ============================ Video Links =============================
     override fun videoListParse(response: Response): List<Video> {
         Log.d(TAG, "videoListParse: code=${response.code} url=${response.request.url}")
         val document = response.asJsoup()
         val referer = response.request.url.toString()
+        val vidsonicToken = vidsonicToken(document)
         val players = document.select("ul#playeroptionsul li")
         Log.d(TAG, "videoListParse: players=${players.size}")
         if (players.isEmpty()) {
@@ -201,7 +235,7 @@ class DeTodoPeliculas : DooPlay(
                 val url = getPlayerUrl(player.post, player.nume, player.type, referer)
                     ?: return@parallelFlatMapBlocking emptyList<Video>()
                 Log.d(TAG, "videoListParse: fv2 player label=${player.label} lang=${player.lang} url=$url")
-                extractVideos(url, player.lang, referer)
+                extractVideos(url, player.lang, referer, vidsonicToken = vidsonicToken)
             }.also { Log.d(TAG, "videoListParse: videos=${it.size}") }
         }
 
@@ -220,11 +254,17 @@ class DeTodoPeliculas : DooPlay(
 
             val url = getPlayerUrl(player, referer) ?: return@parallelFlatMapBlocking emptyList<Video>()
             Log.d(TAG, "videoListParse: player lang=$lang url=$url")
-            extractVideos(url, lang, referer)
+            extractVideos(url, lang, referer, vidsonicToken = vidsonicToken)
         }.also { Log.d(TAG, "videoListParse: videos=${it.size}") }
     }
 
-    private fun extractVideos(url: String, lang: String, referer: String, depth: Int = 0): List<Video> {
+    private fun extractVideos(
+        url: String,
+        lang: String,
+        referer: String,
+        depth: Int = 0,
+        vidsonicToken: String? = null,
+    ): List<Video> {
         if (depth >= 3) return emptyList()
 
         val normalized = normalizeUrl(url)
@@ -243,8 +283,12 @@ class DeTodoPeliculas : DooPlay(
                 ?.takeIf { it.isNotBlank() }
 
             if (decodedUrl != null && decodedUrl != normalized) {
-                return extractVideos(decodedUrl, lang, normalized, depth + 1)
+                return extractVideos(decodedUrl, lang, normalized, depth + 1, vidsonicToken)
             }
+        }
+
+        if (normalized.contains("vidsonic.net/e/", ignoreCase = true)) {
+            return resolveVidsonic(normalized, lang, referer, vidsonicToken)
         }
 
         if (normalized.contains("trembed")) {
@@ -273,7 +317,7 @@ class DeTodoPeliculas : DooPlay(
                 ?.takeIf { it.isNotBlank() }
                 ?: return emptyList()
 
-            return extractVideos(iframeUrl, lang, referer, depth + 1)
+            return extractVideos(iframeUrl, lang, referer, depth + 1, vidsonicToken)
         }
         val vidHideDomains = listOf("vidhide", "vidhidepro", "luluvdo", "vidhideplus")
 
@@ -291,12 +335,65 @@ class DeTodoPeliculas : DooPlay(
                     listOf("streamwish", "strwish", "wishembed").any { normalized.contains(it) } -> streamWishExtractor.videosFromUrl(normalized, "$lang - ")
                     listOf("vidguard", "listeamed", "guard", "listeam").any { normalized.contains(it) } -> vidGuardExtractor.videosFromUrl(normalized, "$lang - ")
                     "voe" in normalized -> voeExtractor.videosFromUrl(normalized, "$lang - ")
+                    listOf("waaw", "netu", "hqq").any { normalized.contains(it, ignoreCase = true) } -> {
+                        Log.d(TAG, "extractVideos: routing to UniversalExtractor for=$normalized")
+                        universalExtractor.videosFromUrl(normalized, headers, prefix = "$lang - Netu")
+                    }
+                    listOf("byse", "bysevepoin", "bysesukior", "q8y5z").any { normalized.contains(it, ignoreCase = true) } -> {
+                        Log.d(TAG, "extractVideos: routing to ByseExtractor for=$normalized")
+                        byseExtractor.videosFromUrl(normalized, "$lang - Byse")
+                    }
                     else -> emptyList()
                 }
         }.onSuccess { videos ->
             Log.d(TAG, "extractVideos: extracted=${videos.size} from=$normalized")
         }.getOrElse {
             Log.e(TAG, "extractVideos: failed url=$normalized message=${it.message}", it)
+            emptyList()
+        }
+    }
+
+    private fun resolveVidsonic(url: String, lang: String, referer: String, token: String?): List<Video> {
+        val code = url.substringAfter("/e/", "")
+            .substringBefore("?")
+            .substringBefore("#")
+            .trim()
+        if (code.isBlank() || token.isNullOrBlank()) {
+            Log.d(TAG, "resolveVidsonic: missing code/token code=$code hasToken=${!token.isNullOrBlank()}")
+            return emptyList()
+        }
+
+        val resolveUrl = "$baseUrl/panel/vidsonic-resolve.php?code=$code&t=$token"
+        val cookieHeader = CookieManager.getInstance().getCookie("$baseUrl/").orEmpty()
+        val resolveHeaders = headers.newBuilder()
+            .set("Accept", "*/*")
+            .set("Referer", referer)
+            .set("sec-fetch-site", "same-origin")
+            .set("sec-fetch-mode", "cors")
+            .set("sec-fetch-dest", "empty")
+            .apply {
+                if (cookieHeader.isNotBlank()) {
+                    set("Cookie", cookieHeader)
+                }
+            }
+            .build()
+
+        return runCatching {
+            directClient.newCall(GET(resolveUrl, resolveHeaders)).execute().use { response ->
+                Log.d(TAG, "resolveVidsonic: code=${response.code} vidsonicCode=$code")
+                if (!response.isSuccessful) return@use emptyList<Video>()
+
+                val body = response.body.string()
+                val master = masterUrlRegex.find(body)?.groupValues?.getOrNull(1)
+                    ?.decodeJsonStringFragment()
+                    ?.let(::normalizeUrl)
+                    ?.takeIf { it.isNotBlank() }
+                    ?: return@use emptyList<Video>()
+
+                listOf(Video(master, "$lang - Vidsonic", master, headers))
+            }
+        }.getOrElse { error ->
+            Log.e(TAG, "resolveVidsonic: failed url=$url message=${error.message}", error)
             emptyList()
         }
     }
@@ -353,7 +450,8 @@ class DeTodoPeliculas : DooPlay(
         if (responseBody.isBlank()) return null
 
         val embedByRegex = embedUrlRegex.find(responseBody)?.groupValues?.getOrNull(1)
-            ?.replace("\\/", "/")
+            ?.decodeJsonStringFragment()
+            ?.extractIframeSrcOrSelf()
             ?.let(::normalizeUrl)
             ?.takeIf { it.isNotBlank() }
         if (embedByRegex != null) return embedByRegex
@@ -510,11 +608,19 @@ class DeTodoPeliculas : DooPlay(
             "vidhidepro",
             "luluvdo",
             "vidhideplus",
+            "vidsonic",
             "okru",
             "vidguard",
             "listeamed",
             "listeam",
             "voe",
+            "waaw",
+            "netu",
+            "hqq",
+            "byse",
+            "bysevepoin",
+            "bysesukior",
+            "q8y5z",
         ).any { contains(it, ignoreCase = true) }
     }
 
@@ -532,6 +638,33 @@ class DeTodoPeliculas : DooPlay(
     }
 
     private val embedUrlRegex = Regex("\"embed_url\"\\s*:\\s*\"((?:\\\\.|[^\"])*)\"")
+
+    private val masterUrlRegex = Regex("\"master\"\\s*:\\s*\"((?:\\\\.|[^\"])*)\"")
+
+    private val vidsonicTokenRegex = Regex("""\bAUTH\s*=\s*['"]&t=([a-f0-9]{32})['"]""", RegexOption.IGNORE_CASE)
+
+    private fun vidsonicToken(document: Document): String? {
+        val source = document.select("script").joinToString("\n") { script -> script.data().ifBlank { script.html() } }
+        return vidsonicTokenRegex.find(source)?.groupValues?.getOrNull(1)
+            .also { Log.d(TAG, "vidsonicToken: present=${!it.isNullOrBlank()}") }
+    }
+
+    private fun String.decodeJsonStringFragment(): String {
+        return replace("\\/", "/")
+            .replace("\\\"", "\"")
+            .replace("\\u0026", "&")
+    }
+
+    private fun String.extractIframeSrcOrSelf(): String {
+        if (!contains("<iframe", ignoreCase = true)) return this
+        return Jsoup.parse(this).selectFirst("iframe[src], iframe[data-src], iframe[data-lazy-src]")
+            ?.let { element ->
+                sequenceOf("src", "data-src", "data-lazy-src")
+                    .map(element::attr)
+                    .firstOrNull { it.isNotBlank() }
+            }
+            ?: this
+    }
 
     private fun decodeBase64Url(data: String): String? = runCatching {
         val sanitized = data
@@ -839,8 +972,9 @@ class DeTodoPeliculas : DooPlay(
         private const val PREF_SERVER_KEY = "preferred_server"
         private const val PREF_SERVER_DEFAULT = "Uqload"
         private const val TAG = "DeTodoPeliculas"
+        private const val CLOUDFLARE_SOLVE_CACHE_MS = 60_000L
         private val PREF_LANG_ENTRIES = arrayOf("[LAT]", "[SUB]", "[CAST]")
         private val PREF_LANG_VALUES = arrayOf("[LAT]", "[SUB]", "[CAST]")
-        private val SERVER_LIST = arrayOf("StreamWish", "Uqload", "VidGuard", "VidHide", "Okru", "Voe")
+        private val SERVER_LIST = arrayOf("StreamWish", "Uqload", "VidGuard", "VidHide", "Okru", "Voe", "Netu", "Byse")
     }
 }
