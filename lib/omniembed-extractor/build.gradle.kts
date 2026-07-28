@@ -1,0 +1,42 @@
+plugins {
+    id("lib-android")
+}
+
+dependencies {
+    implementation(project(":lib:okru-extractor"))
+    implementation(project(":lib:vk-extractor"))
+    implementation(project(":lib:dood-extractor"))
+    implementation(project(":lib:streamtape-extractor"))
+    implementation(project(":lib:mp4upload-extractor"))
+    implementation(project(":lib:streamwish-extractor"))
+    implementation(project(":lib:filemoon-extractor"))
+    implementation(project(":lib:kwik-extractor"))
+
+    implementation(project(":lib:voe-extractor"))
+    implementation(project(":lib:streamlare-extractor"))
+    implementation(project(":lib:streamhub-extractor"))
+    implementation(project(":lib:vidguard-extractor"))
+    implementation(project(":lib:sendvid-extractor"))
+    implementation(project(":lib:streamdav-extractor"))
+    implementation(project(":lib:streamsilk-extractor"))
+    implementation(project(":lib:vido-extractor"))
+    implementation(project(":lib:vudeo-extractor"))
+    implementation(project(":lib:upstream-extractor"))
+    implementation(project(":lib:sibnet-extractor"))
+    implementation(project(":lib:rumble-extractor"))
+    implementation(project(":lib:amazon-extractor"))
+    implementation(project(":lib:fusevideo-extractor"))
+    implementation(project(":lib:lulu-extractor"))
+    implementation(project(":lib:buzzheavier-extractor"))
+    implementation(project(":lib:fastream-extractor"))
+    implementation(project(":lib:vidbom-extractor"))
+    implementation(project(":lib:pixeldrain-extractor"))
+    implementation(project(":lib:mixdrop-extractor"))
+
+    implementation(project(":lib:vidmoly-extractor"))
+    implementation(project(":lib:vidhide-extractor"))
+    implementation(project(":lib:streamplay-extractor"))
+    implementation(project(":lib:streamup-extractor"))
+    implementation(project(":lib:uqload-extractor"))
+    implementation(project(":lib:blogger-extractor"))
+}
