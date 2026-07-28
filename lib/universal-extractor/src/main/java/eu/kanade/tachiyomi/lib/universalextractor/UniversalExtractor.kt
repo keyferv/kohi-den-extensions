@@ -226,20 +226,16 @@ class UniversalExtractor(private val client: OkHttpClient) {
                           video.muted = true;
                           const promise = video.play();
                           if (promise && typeof promise.catch === 'function') {
-                            promise.catch(function(error) {
-                              console.log('UniversalExtractor video.play rejected ' + (error && error.name ? error.name : error));
-                            });
+                            promise.catch(function() {});
                           }
-                        } catch (error) {
-                          console.log('UniversalExtractor video.play error ' + (error && error.name ? error.name : error));
+                        } catch (_) {
                         }
                       }
                       if (window.jwplayer) {
                         try {
                           const jw = window.jwplayer();
                           if (jw && typeof jw.play === 'function') jw.play();
-                        } catch (error) {
-                          console.log('UniversalExtractor jwplayer.play error ' + (error && error.name ? error.name : error));
+                        } catch (_) {
                         }
                       }
                       return 'playback-triggered';
