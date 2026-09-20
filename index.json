@@ -2193,10 +2193,10 @@
   {
     "name": "Aniyomi: DeTodoPeliculas",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.detodopeliculas",
-    "apk": "aniyomi-es.detodopeliculas-v14.14.apk",
+    "apk": "aniyomi-es.detodopeliculas-v14.24.apk",
     "lang": "es",
-    "code": 14,
-    "version": "14.14",
+    "code": 24,
+    "version": "14.24",
     "nsfw": 0,
     "hasReadme": 0,
     "hasChangelog": 0,
@@ -2231,12 +2231,32 @@
     ]
   },
   {
+    "name": "Aniyomi: DoramasLatinoX",
+    "pkg": "eu.kanade.tachiyomi.animeextension.es.doramaslatinox",
+    "apk": "aniyomi-es.doramaslatinox-v14.4.apk",
+    "lang": "es",
+    "code": 4,
+    "version": "14.4",
+    "nsfw": 0,
+    "hasReadme": 0,
+    "hasChangelog": 0,
+    "sources": [
+      {
+        "name": "DoramasLatinoX",
+        "lang": "es",
+        "id": "4948340672368912935",
+        "baseUrl": "https://doramaslatinox.com",
+        "versionId": 1
+      }
+    ]
+  },
+  {
     "name": "Aniyomi: Doramasyt",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.doramasyt",
-    "apk": "aniyomi-es.doramasyt-v14.30.apk",
+    "apk": "aniyomi-es.doramasyt-v14.31.apk",
     "lang": "es",
-    "code": 30,
-    "version": "14.30",
+    "code": 31,
+    "version": "14.31",
     "nsfw": 0,
     "hasReadme": 0,
     "hasChangelog": 0,
@@ -2611,6 +2631,26 @@
     ]
   },
   {
+    "name": "Aniyomi: PelisJuanita",
+    "pkg": "eu.kanade.tachiyomi.animeextension.es.pelisjuanita",
+    "apk": "aniyomi-es.pelisjuanita-v14.4.apk",
+    "lang": "es",
+    "code": 4,
+    "version": "14.4",
+    "nsfw": 0,
+    "hasReadme": 0,
+    "hasChangelog": 0,
+    "sources": [
+      {
+        "name": "PelisJuanita",
+        "lang": "es",
+        "id": "3138936222519654538",
+        "baseUrl": "https://pelisjuanita.com",
+        "versionId": 1
+      }
+    ]
+  },
+  {
     "name": "Aniyomi: Pelisplushd",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.pelisplushd",
     "apk": "aniyomi-es.pelisplushd-v14.85.apk",
@@ -2667,10 +2707,10 @@
   {
     "name": "Aniyomi: SoloLatino",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.sololatino",
-    "apk": "aniyomi-es.sololatino-v14.19.apk",
+    "apk": "aniyomi-es.sololatino-v14.20.apk",
     "lang": "es",
-    "code": 19,
-    "version": "14.19",
+    "code": 20,
+    "version": "14.20",
     "nsfw": 0,
     "hasReadme": 0,
     "hasChangelog": 0,
@@ -2732,12 +2772,32 @@
     ]
   },
   {
+    "name": "Aniyomi: TioPlus",
+    "pkg": "eu.kanade.tachiyomi.animeextension.es.tioplus",
+    "apk": "aniyomi-es.tioplus-v14.4.apk",
+    "lang": "es",
+    "code": 4,
+    "version": "14.4",
+    "nsfw": 0,
+    "hasReadme": 0,
+    "hasChangelog": 0,
+    "sources": [
+      {
+        "name": "TioPlus",
+        "lang": "es",
+        "id": "7301927802731780960",
+        "baseUrl": "https://tioplus.app",
+        "versionId": 1
+      }
+    ]
+  },
+  {
     "name": "Aniyomi: VeoHentai",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.veohentai",
-    "apk": "aniyomi-es.veohentai-v14.1.apk",
+    "apk": "aniyomi-es.veohentai-v14.2.apk",
     "lang": "es",
-    "code": 1,
-    "version": "14.1",
+    "code": 2,
+    "version": "14.2",
     "nsfw": 1,
     "hasReadme": 0,
     "hasChangelog": 0,
