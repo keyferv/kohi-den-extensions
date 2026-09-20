@@ -104,9 +104,23 @@ class MonosChinos : ConfigurableAnimeSource, AnimeHttpSource() {
         return AnimesPage(animeList, nextPage)
     }
 
-    override fun latestUpdatesParse(response: Response) = popularAnimeParse(response)
+    override fun latestUpdatesParse(response: Response): AnimesPage {
+        val document = response.asJsoup()
+        val elements = document.select("ul.row li article")
+        val animeList = elements.mapNotNull { element ->
+            val anchor = element.selectFirst("a[href]") ?: return@mapNotNull null
+            val animeUrl = normalizeLatestAnimeUrl(anchor.attr("abs:href"))
 
-    override fun latestUpdatesRequest(page: Int) = GET("$baseUrl/animes?estado=en+emision&pag=$page", headers)
+            SAnime.create().apply {
+                title = element.selectFirst("h2")?.text()?.trim().orEmpty()
+                thumbnail_url = element.selectFirst("img")?.getImageUrl()
+                setUrlWithoutDomain(animeUrl)
+            }
+        }
+        return AnimesPage(animeList, false)
+    }
+
+    override fun latestUpdatesRequest(page: Int) = GET(baseUrl, headers)
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
         val params = MonosChinosFilters.getSearchParameters(filters)
@@ -236,6 +250,17 @@ class MonosChinos : ConfigurableAnimeSource, AnimeHttpSource() {
     private fun Element.isValidUrl(attrName: String): Boolean {
         if (!hasAttr(attrName)) return false
         return !attr(attrName).contains("anime.png")
+    }
+
+    private fun normalizeLatestAnimeUrl(url: String): String {
+        val normalizedPath = url
+            .replace(Regex("^https?://[^/]+"), "")
+            .removePrefix("/ver/")
+            .replace(Regex("-episodio-\\d+$"), "")
+            .trim()
+            .trim('/')
+
+        return "/anime/$normalizedPath"
     }
 
     private fun Double.ceilPage(): Int = if (this % 1 == 0.0) this.toInt() else ceil(this).toInt()
